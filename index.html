@@ -44,7 +44,7 @@
 
     <!-- 
         Chosen Palette: Slate Blue and Warm Gray
-        Application Structure Plan: A single-page application (SPA) designed as an interactive quiz simulator. The user flow is structured logically: 1. A welcome/start screen introduces the exam. 2. A main quiz section displays one question at a time with navigation, allowing focused problem-solving. 3. A results screen provides an immediate score and a visual breakdown of performance by topic using a chart. 4. A review section allows the user to see all questions, their answers, the correct answers, and explanations. This structure was chosen to mimic a real testing environment, reduce cognitive load by presenting information sequentially, and provide clear, actionable feedback for learning.
+        Application Structure Plan: A single-page application (SPA) designed as an interactive quiz simulator. The user flow is structured logically: 1. A welcome/start screen introduces the exam and allows selection from multiple quiz sets. 2. A main quiz section displays one question at a time with navigation, allowing focused problem-solving. 3. A results screen provides an immediate score and a visual breakdown of performance by topic using a chart. 4. A review section allows the user to see all questions, their answers, the correct answers, and explanations. This structure was chosen to mimic a real testing environment, reduce cognitive load by presenting information sequentially, and provide clear, actionable feedback for learning.
         Visualization & Content Choices: Report Info: AZ-204 exam topic weights -> Goal: Display user's performance breakdown -> Viz Method: Doughnut Chart (Chart.js/Canvas) -> Interaction: Hover to see percentages -> Justification: The doughnut chart provides a quick, intuitive visual comparison of the user's strengths and weaknesses across the official exam categories, making it easier to identify areas needing more study. Report Info: Exam questions and answers -> Goal: Test user knowledge -> Presentation Method: Interactive multiple-choice list -> Interaction: Click to select an answer, navigate with buttons -> Justification: This is the standard and most effective format for a practice exam, allowing for direct interaction and state tracking.
         CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
     -->
@@ -59,21 +59,25 @@
         <main id="main-content">
 
             <div id="start-screen" class="bg-white p-8 rounded-lg shadow-md text-center">
-                <h2 id="start-title" class="text-2xl font-semibold mb-4">Prepare-se para a Certificação</h2>
+                <h2 id="start-title" class="text-2xl font-semibold mb-4">Escolha um Simulado</h2>
                 <p id="start-message" class="text-slate-600 mb-6">
-                    Este simulado contém 30 questões baseadas na distribuição de tópicos do exame oficial AZ-204. Responda a cada pergunta para testar seus conhecimentos e identifique áreas para aprimoramento. Boa sorte!
+                    Teste seus conhecimentos com um dos nossos simulados. Cada um contém 30 questões exclusivas.
                 </p>
-                <div id="start-buttons" class="flex flex-col sm:flex-row justify-center items-center gap-4">
-                    <button id="start-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors text-lg w-full sm:w-auto">
-                        Iniciar Simulado
-                    </button>
+                <div id="start-buttons" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Botões dos simulados serão inseridos aqui pelo JS -->
+                </div>
+                <div id="resume-container" class="mt-6">
+                     <!-- Container para o botão de continuar e limpar -->
                 </div>
             </div>
 
             <div id="quiz-screen" class="hidden">
-                <div class="bg-white p-6 md:p-8 rounded-lg shadow-md">
+                 <div class="bg-white p-6 md:p-8 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-semibold text-slate-700">Questão <span id="question-number"></span> de 30</h3>
+                        <div>
+                           <h2 id="quiz-title" class="text-xl font-bold text-sky-800"></h2>
+                           <h3 class="text-lg font-semibold text-slate-700">Questão <span id="question-number"></span> de 30</h3>
+                        </div>
                         <div id="timer" class="text-lg font-semibold text-sky-700"></div>
                     </div>
                     <p id="question-text" class="text-xl mb-6 leading-relaxed"></p>
@@ -99,7 +103,7 @@
 
                     <div class="mt-8 flex justify-center space-x-4">
                         <button id="review-btn" class="bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-700 transition-colors">Revisar Respostas</button>
-                        <button id="restart-btn" class="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-600 transition-colors">Tentar Novamente</button>
+                        <button id="back-to-home-btn" class="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-600 transition-colors">Voltar ao Início</button>
                     </div>
                 </div>
             </div>
@@ -108,7 +112,7 @@
                 <h2 class="text-2xl font-semibold mb-6 text-center">Revisão das Questões</h2>
                 <div id="review-container" class="space-y-8"></div>
                 <div class="text-center mt-8">
-                    <button id="restart-from-review-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors">Tentar Novamente</button>
+                    <button id="back-to-home-from-review-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors">Voltar ao Início</button>
                 </div>
             </div>
 
@@ -117,236 +121,109 @@
     </div>
 
     <script>
-        const quizData = [
-            { 
-                category: "Desenvolver soluções de computação do Azure", 
-                question: "Você precisa implantar uma aplicação web em contêiner que necessita de acesso a uma Virtual Network (VNet) e deve escalar com base em requisições HTTP. Qual serviço do Azure é a escolha mais apropriada?", 
-                options: ["Azure Container Instances (ACI)", "Azure Container Apps", "Azure Functions com plano Premium", "Azure App Service com plano Básico"], 
-                correct: 1, 
-                explanation: "Azure Container Apps é projetado para executar microserviços e aplicações em contêineres, oferece escalonamento baseado em eventos (como requisições HTTP) e se integra nativamente com VNets, tornando-o ideal para este cenário." 
-            },
-            { 
-                category: "Desenvolver para armazenamento do Azure", 
-                question: "Sua aplicação precisa ler dados de uma conta do Azure Cosmos DB usada por equipes em diferentes continentes. Para garantir baixa latência de leitura para todos os usuários, mas mantendo a consistência forte para escritas na região primária, qual nível de consistência você deve configurar?", 
-                options: ["Strong (Forte)", "Bounded Staleness (Obsolescência Limitada)", "Session (Sessão)", "Eventual (Eventual)"], 
-                correct: 2, 
-                explanation: "O nível de consistência de Sessão garante que as leituras dentro da mesma sessão do cliente sejam consistentes (read-your-own-writes), o que é um ótimo equilíbrio entre desempenho e consistência para aplicações distribuídas globalmente." 
+        const allQuizzes = [
+            {
+                title: "Simulado 1",
+                data: [
+                    { category: "Desenvolver soluções de computação do Azure", question: "Você precisa implantar uma aplicação web em contêiner que necessita de acesso a uma Virtual Network (VNet) e deve escalar com base em requisições HTTP. Qual serviço do Azure é a escolha mais apropriada?", options: ["Azure Container Instances (ACI)", "Azure Container Apps", "Azure Functions com plano Premium", "Azure App Service com plano Básico"], correct: 1, explanation: "Azure Container Apps é projetado para executar microserviços e aplicações em contêineres, oferece escalonamento baseado em eventos (como requisições HTTP) e se integra nativamente com VNets, tornando-o ideal para este cenário." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Sua aplicação precisa ler dados de uma conta do Azure Cosmos DB usada por equipes em diferentes continentes. Para garantir baixa latência de leitura para todos os usuários, mas mantendo a consistência forte para escritas na região primária, qual nível de consistência você deve configurar?", options: ["Strong (Forte)", "Bounded Staleness (Obsolescência Limitada)", "Session (Sessão)", "Eventual (Eventual)"], correct: 2, explanation: "O nível de consistência de Sessão garante que as leituras dentro da mesma sessão do cliente sejam consistentes (read-your-own-writes), o que é um ótimo equilíbrio entre desempenho e consistência para aplicações distribuídas globalmente." },
+                    { category: "Implementar a segurança do Azure", question: "Uma Azure Function precisa acessar segredos armazenados em um Azure Key Vault sem usar chaves de acesso ou segredos no código ou na configuração da aplicação. Qual é a melhor prática para alcançar isso?", options: ["Usar uma connection string para o Key Vault no local.settings.json.", "Usar uma Identidade Gerenciada (Managed Identity) para a Azure Function.", "Armazenar o segredo do Key Vault diretamente nas Application Settings da Function App.", "Usar uma Shared Access Signature (SAS) com validade longa."], correct: 1, explanation: "Identidades Gerenciadas fornecem uma identidade para a Azure Function no Microsoft Entra ID. Você pode conceder a essa identidade acesso ao Key Vault, permitindo que a função acesse os segredos de forma segura sem credenciais no código." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Sua organização expõe várias APIs de microsserviços e deseja centralizar o gerenciamento de autenticação, autorização, limitação de taxa (rate limiting) e monitoramento. Qual serviço do Azure foi projetado para essa finalidade?", options: ["Azure Application Gateway", "Azure API Management (APIM)", "Azure Logic Apps", "Azure Service Bus"], correct: 1, explanation: "O Azure API Management (APIM) atua como uma fachada para seus serviços de backend, permitindo publicar, proteger, transformar, manter e monitorar APIs em um local centralizado." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Você está criando uma imagem de contêiner personalizada para sua aplicação .NET e precisa armazená-la em um registro privado e seguro no Azure, integrado ao ecossistema do Azure. Onde você deve publicar essa imagem?", options: ["Docker Hub", "GitHub Packages", "Azure Container Registry (ACR)", "Azure Blob Storage"], correct: 2, explanation: "O Azure Container Registry (ACR) é um serviço de registro de contêiner privado e gerenciado, baseado no Docker Registry 2.0. Ele se integra perfeitamente com outros serviços do Azure, como App Service, AKS e ACI." },
+                    { category: "Monitorar e solucionar problemas de soluções do Azure", question: "Você habilitou o Application Insights para sua aplicação web e percebeu que as informações de telemetria sobre dependências, como chamadas a um banco de dados SQL, não estão sendo coletadas automaticamente. O que provavelmente está faltando?", options: ["A Instrumentation Key não foi configurada corretamente.", "O agente do Application Insights (ou SDK) não está configurado para coletar telemetria de dependências.", "É necessário criar alertas manuais para cada dependência.", "O Application Insights não suporta monitoramento de dependências SQL."], correct: 1, explanation: "Para a coleta automática de dependências, o SDK do Application Insights deve ser corretamente instrumentado na sua aplicação. Em alguns casos, como em aplicações .NET mais antigas ou em cenários específicos, pode ser necessário habilitar explicitamente a coleta de dependências ou usar agentes de monitoramento." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Você precisa garantir que todos os blobs em uma conta de armazenamento do Azure sejam movidos da camada de acesso 'Hot' para 'Cool' após 30 dias e, em seguida, arquivados após 180 dias para otimizar custos. Qual recurso do Azure Blob Storage você deve usar?", options: ["Azure Data Factory", "Gerenciamento do Ciclo de Vida (Lifecycle Management)", "Shared Access Signatures (SAS)", "Blob Versioning"], correct: 1, explanation: "As políticas de Gerenciamento do Ciclo de Vida permitem criar regras para automatizar a transição de blobs para camadas de acesso mais frias ou excluí-los com base em sua idade ou na data da última modificação." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Você tem um Web App no Azure App Service e deseja testar uma nova versão em produção com um pequeno subconjunto de usuários antes de liberá-la para todos. Qual recurso do App Service facilita essa abordagem?", options: ["Planos de App Service", "WebJobs", "Slots de Implantação (Deployment Slots)", "Backup e Restauração"], correct: 2, explanation: "Os Slots de Implantação permitem criar ambientes de preparação (staging) para sua aplicação. Você pode implantar a nova versão em um slot, testá-la e, em seguida, trocar (swap) o slot com o de produção com zero tempo de inatividade, direcionando gradualmente o tráfego se desejar." },
+                    { category: "Implementar a segurança do Azure", question: "Um aplicativo cliente precisa de permissão para ler um blob específico em uma conta de armazenamento por um período limitado de 15 minutos, sem ter acesso à chave da conta de armazenamento. Como você pode conceder esse acesso temporário?", options: ["Usando uma chave de acesso da conta de armazenamento.", "Criando uma política de acesso no nível do contêiner.", "Gerando uma Shared Access Signature (SAS) para o blob.", "Concedendo ao aplicativo uma função RBAC de 'Storage Blob Data Reader'."], correct: 2, explanation: "Uma Shared Access Signature (SAS) fornece acesso delegado e granular aos recursos em sua conta de armazenamento. Você pode especificar permissões (leitura, escrita), um período de validade e o recurso específico (neste caso, o blob)." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Você está desenvolvendo uma solução que precisa reagir a eventos que ocorrem em serviços do Azure, como o upload de um novo blob para o Storage ou a criação de um novo recurso. Qual serviço é ideal para rotear esses eventos para manipuladores, como uma Azure Function?", options: ["Azure Event Hubs", "Azure Service Bus", "Azure Event Grid", "Azure Queue Storage"], correct: 2, explanation: "O Azure Event Grid é um serviço de roteamento de eventos totalmente gerenciado que permite conectar facilmente fontes de eventos (como Blob Storage) a manipuladores de eventos (como Azure Functions) usando um modelo de publicação/assinatura." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Você está implementando uma Azure Function que será acionada sempre que uma nova mensagem chegar a uma fila do Azure Service Bus. Que tipo de componente você deve configurar na sua função para isso?", options: ["Input Binding", "Output Binding", "Trigger (Gatilho)", "Webhook"], correct: 2, explanation: "Um Gatilho (Trigger) define como uma função é invocada. Para reagir a mensagens em uma fila do Service Bus, você deve usar um 'Service Bus Trigger'." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Ao desenvolver uma aplicação que usa o SDK do Azure Blob Storage, você precisa adicionar metadados personalizados (chave-valor) a um blob no momento do upload. Como isso é geralmente alcançado?", options: ["Nomeando o blob com os metadados no formato 'chave=valor'.", "Carregando um arquivo JSON separado com os metadados.", "Passando um dicionário ou mapa de metadados como um parâmetro no método de upload.", "Definindo tags no contêiner que se aplicam a todos os blobs."], correct: 2, explanation: "O SDK do Azure Blob Storage, em linguagens como C#, Python e Java, fornece um parâmetro nos métodos de upload (como `UploadAsync` ou `upload_blob`) para passar um dicionário de strings que será armazenado como metadados do blob." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Você precisa executar um único contêiner rapidamente para uma tarefa de curta duração sem se preocupar com orquestração de contêineres ou gerenciamento de servidores. Qual é o serviço mais simples e rápido para essa finalidade?", options: ["Azure Kubernetes Service (AKS)", "Azure App Service", "Azure Container Apps", "Azure Container Instances (ACI)"], correct: 3, explanation: "Azure Container Instances (ACI) é a solução mais rápida e simples para executar um único contêiner no Azure. Ele oferece faturamento por segundo e não requer a sobrecarga de gerenciamento de um orquestrador." },
+                    { category: "Implementar a segurança do Azure", question: "Sua aplicação web precisa autenticar usuários usando suas contas corporativas (Microsoft Entra ID) e também contas pessoais da Microsoft (MSA). Qual ponto de extremidade da plataforma de identidade da Microsoft você deve usar para suportar ambos os tipos de conta?", options: ["https://login.microsoftonline.com/{tenant-id}", "https://login.microsoftonline.com/organizations", "https://login.microsoftonline.com/common", "https://login.microsoftonline.com/consumers"], correct: 2, explanation: "O ponto de extremidade '/common' é usado em aplicações multilocatárias para permitir que usuários de qualquer locatário do Microsoft Entra ID e usuários com contas pessoais da Microsoft (MSA) façam login." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Sua aplicação processa um grande volume de dados e precisa ser notificada em tempo real sobre todas as alterações (criações e atualizações) em um contêiner do Azure Cosmos DB. Qual recurso você deve utilizar?", options: ["Stored Procedures do Cosmos DB", "Triggers do Cosmos DB", "Change Feed (Feed de Alterações)", "Consultas SQL periódicas"], correct: 2, explanation: "O Change Feed do Cosmos DB fornece um log persistente de alterações em um contêiner. Você pode criar um processador de feed de alterações para ouvir e reagir a esses eventos em tempo real." },
+                    { category: "Monitorar e solucionar problemas de soluções do Azure", question: "Para monitorar a disponibilidade e o tempo de resposta da página inicial da sua aplicação web a partir de diferentes localizações geográficas, qual recurso do Application Insights você deve configurar?", options: ["Métricas em tempo real (Live Metrics)", "Mapa da Aplicação (Application Map)", "Testes de disponibilidade (Availability tests)", "Análise de falhas (Failure analysis)"], correct: 2, explanation: "Os testes de disponibilidade, anteriormente conhecidos como web tests, permitem configurar pings de URL ou testes de várias etapas para verificar a disponibilidade e a capacidade de resposta do seu aplicativo a partir de pontos de presença do Azure em todo o mundo." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Você precisa garantir que mensagens enviadas para uma fila do Azure Service Bus sejam processadas estritamente na ordem em que foram enviadas (First-In, First-Out). O que você precisa habilitar na fila?", options: ["Detecção de duplicatas", "Sessões (Sessions)", "Particionamento", "Tópicos e Assinaturas"], correct: 1, explanation: "As Sessões no Service Bus permitem o processamento de mensagens correlacionadas e ordenadas. Ao habilitar sessões em uma fila, um consumidor pode bloquear a sessão para garantir que processe as mensagens dessa sessão em ordem FIFO." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Um Web App no Azure App Service está enfrentando picos de tráfego imprevisíveis. Você precisa configurar o App Service para adicionar ou remover instâncias automaticamente com base no uso da CPU. Que recurso você deve configurar?", options: ["Scale up (Escalar verticalmente)", "Deployment slots", "Autoscale (Escalabilidade automática)", "WebJobs"], correct: 2, explanation: "A Escalabilidade automática (Autoscale), também conhecida como scale out, permite definir regras para aumentar (adicionar) ou diminuir (remover) o número de instâncias que executam sua aplicação com base em métricas de desempenho, como o percentual de uso da CPU." },
+                    { category: "Implementar a segurança do Azure", question: "Sua aplicação precisa chamar a API do Microsoft Graph para ler informações do perfil do usuário autenticado. Qual é o primeiro passo para permitir que sua aplicação faça isso de forma segura?", options: ["Obter as credenciais de administrador global do locatário.", "Registrar a aplicação no Microsoft Entra ID e conceder as permissões de API necessárias.", "Usar uma chave de API estática gerada no portal do Azure.", "Chamar a API anonimamente."], correct: 1, explanation: "Toda aplicação que se integra à plataforma de identidade da Microsoft deve ser registrada no Microsoft Entra ID. Durante o registro, você define as permissões de API (escopos) que sua aplicação precisa, como 'User.Read', para que o consentimento possa ser solicitado ao usuário." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Você precisa enviar um grande volume de eventos de telemetria de dispositivos IoT para o Azure. O serviço deve suportar alta taxa de transferência, baixa latência e a capacidade de vários consumidores lerem o mesmo fluxo de eventos. Qual serviço é o mais adequado?", options: ["Azure Queue Storage", "Azure Service Bus Queues", "Azure Event Hubs", "Azure Event Grid"], correct: 2, explanation: "O Azure Event Hubs é uma plataforma de streaming de big data e um serviço de ingestão de eventos. Ele foi projetado para ingerir milhões de eventos por segundo, tornando-o ideal para cenários de telemetria e IoT." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Você está configurando o arquivo `function.json` para uma Azure Function em Python. Você precisa que a função leia o conteúdo de um blob do Azure Storage sempre que for acionada por uma mensagem de fila. Como você define o acesso ao blob?", options: ["Como um 'trigger' do tipo 'blob'.", "Como um 'output binding' do tipo 'blob'.", "Como um 'input binding' do tipo 'blob'.", "Não é possível ler um blob e ser acionado por uma fila ao mesmo tempo."], correct: 2, explanation: "Você usaria um 'Queue Trigger' para iniciar a função e um 'Blob Input Binding' para ler dados de um blob. O input binding permite que a função acesse dados de outro serviço de forma declarativa e sem escrever código de acesso a dados." },
+                    { category: "Monitorar e solucionar problemas de soluções do Azure", question: "Ao analisar logs no Application Insights, você deseja escrever consultas complexas para filtrar, agregar e visualizar dados de telemetria. Qual linguagem de consulta você usaria?", options: ["SQL (Structured Query Language)", "PowerShell", "KQL (Kusto Query Language)", "JSON"], correct: 2, explanation: "O Azure Monitor Logs (e, por extensão, o Application Insights Analytics) usa a Kusto Query Language (KQL) para consultar e analisar os dados de telemetria. KQL é uma linguagem poderosa e somente leitura, otimizada para análise de big data." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Sua aplicação precisa realizar uma operação atômica que envolve múltiplos itens dentro da mesma partição lógica em um contêiner do Azure Cosmos DB. Qual a melhor forma de garantir a atomicidade dessa transação?", options: ["Usar o Change Feed.", "Executar as operações sequencialmente e implementar uma lógica de reversão manual.", "Usar Stored Procedures do Cosmos DB.", "Usar o SDK de transações do .NET."], correct: 2, explanation: "Stored Procedures no Azure Cosmos DB são executadas dentro do escopo de uma partição lógica e garantem transações ACID (Atomicidade, Consistência, Isolamento, Durabilidade) para operações que envolvem múltiplos documentos." },
+                    { category: "Implementar a segurança do Azure", question: "Você está armazenando uma connection string de banco de dados para sua aplicação web. Para maximizar a segurança, onde essa connection string deve ser armazenada e como a aplicação deve acessá-la?", options: ["No arquivo web.config ou appsettings.json, versionado no Git.", "Como uma variável de ambiente no servidor de desenvolvimento.", "No Azure Key Vault, acessada pela aplicação usando uma Identidade Gerenciada.", "Em um Azure Blob Storage com acesso público desabilitado."], correct: 2, explanation: "A prática recomendada é armazenar segredos, como connection strings, no Azure Key Vault. A aplicação deve então usar uma Identidade Gerenciada para se autenticar no Key Vault e recuperar o segredo em tempo de execução, evitando credenciais no código ou na configuração." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Você está usando o Azure API Management e precisa transformar uma resposta de um serviço de backend (que retorna XML) para o formato JSON antes de enviá-la ao cliente. Onde você configuraria essa transformação?", options: ["Nas configurações do Produto.", "Nas configurações da API.", "Em uma Política (Policy) na seção 'outbound' ou 'on-response'.", "Nas configurações de diagnóstico."], correct: 2, explanation: "As Políticas no APIM permitem modificar o comportamento da API em tempo de execução. A transformação de formato de resposta é uma tarefa comum realizada no pipeline de processamento de saída ('outbound'), usando políticas como `set-body` com expressões para converter de XML para JSON." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Qual é a principal diferença de caso de uso entre Azure Queue Storage e Azure Service Bus Queues?", options: ["Queue Storage é para comunicação entre componentes dentro do Azure; Service Bus é para comunicação com sistemas on-premises.", "Queue Storage oferece uma API REST simples e é ideal para filas grandes e simples; Service Bus oferece recursos avançados como sessões, transações e detecção de duplicatas.", "Queue Storage é mais caro, mas mais rápido que Service Bus.", "Não há diferenças significativas; são serviços intercambiáveis."], correct: 1, explanation: "O Azure Queue Storage é um serviço de enfileiramento simples e econômico, ideal para desacoplar componentes e para backlogs de trabalho. O Service Bus é um agente de mensagens corporativo completo, com recursos avançados para cenários de mensagens complexos que exigem maior confiabilidade e funcionalidades como FIFO (com sessões)." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Você precisa configurar o log de diagnóstico para um Azure App Service Web App para capturar logs do servidor web (IIS) e logs de rastreamento de solicitações com falha. Onde você habilita e configura essas opções?", options: ["No Application Insights.", "No portal do Azure, na seção 'Diagnóstico e resolução de problemas' do App Service.", "No portal do Azure, na seção 'Logs de diagnóstico' (Diagnostic settings) do App Service.", "Modificando o arquivo web.config diretamente via Kudu."], correct: 2, explanation: "A seção 'Logs de diagnóstico' no portal do Azure para um App Service é o local central para habilitar vários tipos de logs, incluindo logs do servidor de aplicativos, logs do servidor web, mensagens de erro detalhadas e rastreamento de solicitações com falha, e para configurar seu destino (Filesystem, Blob Storage, etc.)." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Ao usar o SDK do Azure Cosmos DB para NoSQL, qual método é mais eficiente para ler um único item quando você já conhece seu ID e sua chave de partição?", options: ["Executar uma consulta SQL como `SELECT * FROM c WHERE c.id = '...'`.", "Usar o método `ReadItemAsync` (ou equivalente) fornecendo o ID e a chave de partição.", "Listar todos os itens no contêiner e filtrar o resultado no lado do cliente.", "Usar o Change Feed para encontrar o item."], correct: 1, explanation: "A operação de leitura de ponto (`ReadItemAsync`) é a forma mais eficiente e de menor custo (em RUs) para buscar um único item, pois ela acessa o item diretamente usando seu ID e chave de partição, sem a sobrecarga de um mecanismo de consulta." },
+                    { category: "Implementar a segurança do Azure", question: "Uma aplicação precisa que um usuário conceda permissão para que ela leia seus e-mails através da API do Microsoft Graph. Que tipo de permissão de API é necessária para este cenário?", options: ["Permissão de Aplicação (Application permission)", "Permissão Delegada (Delegated permission)", "Shared Access Signature (SAS)", "Chave de API (API Key)"], correct: 1, explanation: "Permissões Delegadas são usadas em cenários onde um usuário está presente e o aplicativo age em nome desse usuário. O aplicativo só poderá acessar o que o usuário conectado tem permissão para acessar. Permissões de Aplicação são para cenários de serviço/daemon, sem um usuário conectado." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Você está projetando uma solução de mensagens. A principal exigência é que uma única mensagem de entrada seja entregue a múltiplos sistemas de backend que precisam processá-la de forma independente. Qual padrão e serviço do Azure se encaixam melhor?", options: ["Padrão Competing Consumers usando uma Fila do Service Bus.", "Padrão Publish/Subscribe usando Tópicos e Assinaturas do Service Bus.", "Padrão Fan-out usando o Azure Event Grid.", "Padrão de Filas de Prioridade usando Queue Storage."], correct: 1, explanation: "O padrão Publish/Subscribe (Pub/Sub) é exatamente para este cenário. No Azure Service Bus, você publica a mensagem em um Tópico, e cada sistema de backend assina (subscribe) esse tópico com sua própria Assinatura, recebendo uma cópia da mensagem para processamento independente." }
+                ]
             },
             {
-                category: "Implementar a segurança do Azure",
-                question: "Uma Azure Function precisa acessar segredos armazenados em um Azure Key Vault sem usar chaves de acesso ou segredos no código ou na configuração da aplicação. Qual é a melhor prática para alcançar isso?",
-                options: ["Usar uma connection string para o Key Vault no local.settings.json.", "Usar uma Identidade Gerenciada (Managed Identity) para a Azure Function.", "Armazenar o segredo do Key Vault diretamente nas Application Settings da Function App.", "Usar uma Shared Access Signature (SAS) com validade longa."],
-                correct: 1,
-                explanation: "Identidades Gerenciadas fornecem uma identidade para a Azure Function no Microsoft Entra ID. Você pode conceder a essa identidade acesso ao Key Vault, permitindo que a função acesse os segredos de forma segura sem credenciais no código."
+                title: "Simulado 2",
+                data: [
+                    { category: "Desenvolver soluções de computação do Azure", question: "Qual é a principal vantagem de usar Durable Functions para orquestrar um fluxo de trabalho complexo em comparação com uma única Azure Function monolítica?", options: ["Menor custo de execução.", "Gerenciamento automático do estado do fluxo de trabalho (checkpointing).", "Suporte a mais linguagens de programação.", "Melhor integração com o Application Insights."], correct: 1, explanation: "Durable Functions gerenciam automaticamente o estado, os pontos de verificação e as reinicializações, simplificando fluxos de trabalho de longa duração e com estado, como encadeamento de funções e fan-out/fan-in." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Ao criar um novo item em um contêiner do Azure Cosmos DB usando o SDK .NET, qual classe você normalmente utilizaria para realizar a operação `CreateItemAsync`?", options: ["CosmosClient", "Database", "Container", "Item"], correct: 2, explanation: "A classe `Container` representa um contêiner específico dentro de um banco de dados e fornece métodos para operações em itens, como `CreateItemAsync`, `ReadItemAsync` e `DeleteItemAsync`." },
+                    { category: "Implementar a segurança do Azure", question: "Você tem duas aplicações (App A e App B) que precisam acessar o Azure Key Vault. Você quer conceder permissões diferentes para cada uma. Qual é a abordagem recomendada usando Identidades Gerenciadas?", options: ["Usar a mesma Identidade Gerenciada atribuída pelo sistema para ambas.", "Criar duas Identidades Gerenciadas atribuídas pelo usuário, uma para cada app.", "Usar uma chave de acesso do Key Vault para App A e uma identidade gerenciada para App B.", "Armazenar as credenciais em uma Azure App Configuration compartilhada."], correct: 1, explanation: "Identidades Gerenciadas atribuídas pelo usuário são recursos independentes do Azure. Criar uma para cada aplicativo permite um gerenciamento de permissões mais granular, pois você concede acesso ao Key Vault para cada identidade específica." },
+                    { category: "Monitorar e solucionar problemas de soluções do Azure", question: "Você deseja rastrear uma ação específica do usuário em sua aplicação, como 'Adicionar item ao carrinho', usando o Application Insights. Qual método do SDK você deve chamar para registrar este evento?", options: ["TrackTrace()", "TrackRequest()", "TrackEvent()", "TrackMetric()"], correct: 2, explanation: "`TrackEvent()` é o método projetado especificamente para registrar eventos de negócios ou ações do usuário. Isso permite analisar a frequência com que certas funcionalidades são usadas." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Sua API no Azure API Management precisa validar um token JWT (JSON Web Token) recebido no cabeçalho de autorização antes de encaminhar a solicitação para o backend. Qual política do APIM você deve usar?", options: ["<check-header>", "<validate-jwt>", "<authentication-basic>", "<set-variable>"], correct: 1, explanation: "A política `<validate-jwt>` é a política interna do APIM projetada para validar tokens JWT. Ela pode verificar a assinatura, o emissor (issuer), o público (audience), as declarações (claims) e a data de expiração do token." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "O que é um 'consumer group' no contexto do Azure Event Hubs?", options: ["Um grupo de eventos que são processados juntos.", "Uma política de segurança que define quem pode ler os eventos.", "Uma visualização (view) do fluxo de eventos que permite que múltiplos aplicativos consumidores leiam o mesmo fluxo de forma independente.", "Um conjunto de partições dentro de um Event Hub."], correct: 2, explanation: "Um consumer group fornece uma visão distinta e independente do fluxo de eventos. Cada aplicativo consumidor usa seu próprio grupo para ler os eventos sem interferir nos outros, mantendo seu próprio ponteiro de posição no fluxo." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Você precisa implantar uma aplicação em contêiner no Azure App Service. O que você deve habilitar nas configurações do App Service para implantar a partir de um Azure Container Registry (ACR)?", options: ["Acesso anônimo no ACR.", "Identidade Gerenciada no App Service.", "Continuous Deployment (CI/CD) nas configurações do App Service.", "WebJobs."], correct: 2, explanation: "A configuração de Continuous Deployment (CI/CD) no App Service permite que você o conecte a um registro de contêiner (como o ACR). Ele pode então monitorar a imagem por novas versões e reimplantar automaticamente o aplicativo quando uma nova imagem é enviada." },
+                    { category: "Implementar a segurança do Azure", question: "Sua aplicação usa o SDK do Microsoft Graph para ler arquivos do OneDrive de um usuário. Qual escopo (scope) de permissão delegada é o mais apropriado para solicitar apenas o acesso de leitura a arquivos?", options: ["Files.ReadWrite.All", "User.Read", "Sites.Read.All", "Files.Read"], correct: 3, explanation: "O escopo `Files.Read` segue o princípio do menor privilégio, concedendo à aplicação permissão apenas para ler os arquivos do usuário conectado, sem permissão de escrita ou acesso a arquivos de outros usuários." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Qual é o principal objetivo de se definir uma chave de partição (partition key) em um contêiner do Azure Cosmos DB?", options: ["Para criptografar os dados em repouso.", "Para distribuir os dados logicamente entre partições para escalabilidade e desempenho.", "Para criar um índice secundário para consultas mais rápidas.", "Para habilitar o backup automático do contêiner."], correct: 1, explanation: "A chave de partição determina como os dados são distribuídos em partições lógicas e físicas. Uma boa chave de partição distribui as solicitações uniformemente, o que é crucial para a escalabilidade e o desempenho do banco de dados." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Qual é a principal diferença funcional entre um Tópico do Azure Service Bus e uma Fila do Azure Service Bus?", options: ["Tópicos são mais rápidos que Filas.", "Tópicos suportam um modelo de publicação/assinatura (1:N), enquanto Filas suportam um modelo ponto a ponto (1:1).", "Filas podem armazenar mensagens maiores que Tópicos.", "Filas são mais seguras que Tópicos."], correct: 1, explanation: "Uma Fila entrega cada mensagem a um único consumidor. Um Tópico, através de suas assinaturas, entrega uma cópia de cada mensagem para múltiplos consumidores (assinantes), habilitando o padrão de fan-out." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Quando você deve considerar o uso de Azure WebJobs em vez de Azure Functions?", options: ["Para executar código em resposta a um gatilho HTTP.", "Para executar scripts ou programas em segundo plano como parte de um App Service, sem um modelo serverless.", "Para orquestrar fluxos de trabalho de longa duração.", "Quando o código precisa ser executado em um contêiner Docker."], correct: 1, explanation: "WebJobs são parte do Azure App Service e são ideais para executar tarefas em segundo plano (contínuas ou agendadas) no mesmo contexto e recursos de um Web App existente, sem a sobrecarga de um serviço separado." },
+                    { category: "Monitorar e solucionar problemas de soluções do Azure", question: "Você está usando Kusto Query Language (KQL) para analisar falhas em seu aplicativo. Qual comando você usaria para contar o número de exceções por tipo?", options: ["requests | count by type", "exceptions | summarize count() by type", "exceptions | where success == false | group by type", "traces | countif type == 'exception'"], correct: 1, explanation: "Na tabela `exceptions` do Application Insights, o operador `summarize` é usado para agregar dados. `summarize count() by type` agrupará as exceções pelo seu tipo e contará as ocorrências de cada um." },
+                    { category: "Implementar a segurança do Azure", question: "O que é um 'reference' de Key Vault em uma Azure App Configuration?", options: ["Uma cópia do segredo do Key Vault armazenada na App Configuration.", "Uma política que permite que a App Configuration acesse o Key Vault.", "Um ponteiro para um segredo no Key Vault, que permite que a App Configuration leia o valor diretamente do cofre.", "Um log de auditoria de quem acessou o segredo."], correct: 2, explanation: "Uma referência de Key Vault permite que a App Configuration se refira a um segredo armazenado em um Key Vault. Quando o aplicativo lê a configuração, ele usa sua identidade gerenciada para buscar o valor do segredo diretamente do Key Vault, mantendo o segredo centralizado e seguro." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Qual propriedade de uma mensagem do Azure Queue Storage é usada para controlar por quanto tempo a mensagem fica invisível para outros consumidores depois de ser lida da fila?", options: ["VisibilityTimeout", "TimeToLive", "DequeueCount", "MessageId"], correct: 0, explanation: "O `VisibilityTimeout` (tempo limite de visibilidade) define o período em que uma mensagem, após ser lida (desenfileirada), fica oculta para outros consumidores. Se o processamento não for concluído e a mensagem não for excluída, ela reaparecerá na fila após o timeout." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Você está usando o Azure Event Grid e deseja que sua Azure Function seja acionada apenas quando um blob com a extensão '.jpg' for criado. Onde você configura essa lógica de filtragem?", options: ["No código da Azure Function.", "Na configuração do Tópico do Event Grid.", "Na Assinatura (Subscription) do Event Grid.", "Na conta de armazenamento de origem."], correct: 2, explanation: "O Event Grid permite a filtragem de eventos na Assinatura. Você pode configurar filtros de sufixo no campo `subject` para que apenas eventos correspondentes (neste caso, blobs terminando em '.jpg') sejam entregues ao seu manipulador." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "O que acontece quando você faz um 'swap' entre os slots de produção e preparação (staging) em um Azure App Service?", options: ["O código é reimplantado no slot de produção, causando um tempo de inatividade.", "As configurações do aplicativo e as connection strings são trocadas junto com o código.", "O Azure troca as VNETs dos slots, efetivamente redirecionando o tráfego para o slot de preparação.", "As configurações marcadas como 'slot setting' permanecem no slot original."], correct: 3, explanation: "Configurações como connection strings podem ser marcadas como 'deployment slot setting'. Isso significa que elas não são trocadas com o conteúdo do aplicativo, permitindo que o ambiente de preparação se conecte a um banco de dados de teste e o de produção ao banco de produção." },
+                    { category: "Implementar a segurança do Azure", question: "Qual é o objetivo principal do Microsoft Entra ID B2C (Business-to-Consumer)?", options: ["Fornecer autenticação para funcionários dentro de uma organização.", "Gerenciar o acesso de aplicativos a APIs do Azure.", "Oferecer um serviço de gerenciamento de identidade para aplicações voltadas para o cliente (consumidor final).", "Sincronizar identidades de um Active Directory on-premises com a nuvem."], correct: 2, explanation: "O Azure AD B2C é um serviço de gerenciamento de identidade que permite que os clientes se inscrevam, façam login e gerenciem seus perfis ao usar suas aplicações, suportando provedores de identidade social (como Google, Facebook) e contas locais." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Para que serve a propriedade ETag em um blob do Azure Storage?", options: ["Para definir a data de expiração do blob.", "Para armazenar metadados personalizados.", "Para fornecer um mecanismo de controle de concorrência otimista.", "Para classificar o blob em uma camada de acesso (hot/cool/archive)."], correct: 2, explanation: "O ETag é um identificador para a versão de um blob. Ao realizar uma atualização, você pode fornecer o ETag que você leu. Se o blob foi modificado por outro processo nesse ínterim (e o ETag mudou), a sua atualização falhará, prevenindo a sobrescrita de alterações." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Como o Azure API Management lida com o versionamento de APIs?", options: ["Ele não suporta versionamento; você deve criar uma nova instância do APIM para cada versão.", "Apenas através de versionamento no caminho da URL (ex: /api/v1/products).", "Suporta versionamento por caminho da URL, por cabeçalho HTTP ou por query string.", "O versionamento é gerenciado automaticamente com base em tags do Git."], correct: 2, explanation: "O APIM oferece flexibilidade para o versionamento de APIs, permitindo que você escolha o esquema que melhor se adapta à sua arquitetura: no caminho (path), em um cabeçalho HTTP personalizado ou em um parâmetro da query string." }
+                ]
             },
             {
-                category: "Conectar e consumir serviços do Azure e de terceiros",
-                question: "Sua organização expõe várias APIs de microsserviços e deseja centralizar o gerenciamento de autenticação, autorização, limitação de taxa (rate limiting) e monitoramento. Qual serviço do Azure foi projetado para essa finalidade?",
-                options: ["Azure Application Gateway", "Azure API Management (APIM)", "Azure Logic Apps", "Azure Service Bus"],
-                correct: 1,
-                explanation: "O Azure API Management (APIM) atua como uma fachada para seus serviços de backend, permitindo publicar, proteger, transformar, manter e monitorar APIs em um local centralizado."
-            },
-            {
-                category: "Desenvolver soluções de computação do Azure",
-                question: "Você está criando uma imagem de contêiner personalizada para sua aplicação .NET e precisa armazená-la em um registro privado e seguro no Azure, integrado ao ecossistema do Azure. Onde você deve publicar essa imagem?",
-                options: ["Docker Hub", "GitHub Packages", "Azure Container Registry (ACR)", "Azure Blob Storage"],
-                correct: 2,
-                explanation: "O Azure Container Registry (ACR) é um serviço de registro de contêiner privado e gerenciado, baseado no Docker Registry 2.0. Ele se integra perfeitamente com outros serviços do Azure, como App Service, AKS e ACI."
-            },
-            {
-                category: "Monitorar e solucionar problemas de soluções do Azure",
-                question: "Você habilitou o Application Insights para sua aplicação web e percebeu que as informações de telemetria sobre dependências, como chamadas a um banco de dados SQL, não estão sendo coletadas automaticamente. O que provavelmente está faltando?",
-                options: ["A Instrumentation Key não foi configurada corretamente.", "O agente do Application Insights (ou SDK) não está configurado para coletar telemetria de dependências.", "É necessário criar alertas manuais para cada dependência.", "O Application Insights não suporta monitoramento de dependências SQL."],
-                correct: 1,
-                explanation: "Para a coleta automática de dependências, o SDK do Application Insights deve ser corretamente instrumentado na sua aplicação. Em alguns casos, como em aplicações .NET mais antigas ou em cenários específicos, pode ser necessário habilitar explicitamente a coleta de dependências ou usar agentes de monitoramento."
-            },
-            {
-                category: "Desenvolver para armazenamento do Azure",
-                question: "Você precisa garantir que todos os blobs em uma conta de armazenamento do Azure sejam movidos da camada de acesso 'Hot' para 'Cool' após 30 dias e, em seguida, arquivados após 180 dias para otimizar custos. Qual recurso do Azure Blob Storage você deve usar?",
-                options: ["Azure Data Factory", "Gerenciamento do Ciclo de Vida (Lifecycle Management)", "Shared Access Signatures (SAS)", "Blob Versioning"],
-                correct: 1,
-                explanation: "As políticas de Gerenciamento do Ciclo de Vida permitem criar regras para automatizar a transição de blobs para camadas de acesso mais frias ou excluí-los com base em sua idade ou na data da última modificação."
-            },
-            {
-                category: "Desenvolver soluções de computação do Azure",
-                question: "Você tem um Web App no Azure App Service e deseja testar uma nova versão em produção com um pequeno subconjunto de usuários antes de liberá-la para todos. Qual recurso do App Service facilita essa abordagem?",
-                options: ["Planos de App Service", "WebJobs", "Slots de Implantação (Deployment Slots)", "Backup e Restauração"],
-                correct: 2,
-                explanation: "Os Slots de Implantação permitem criar ambientes de preparação (staging) para sua aplicação. Você pode implantar a nova versão em um slot, testá-la e, em seguida, trocar (swap) o slot com o de produção com zero tempo de inatividade, direcionando gradualmente o tráfego se desejar."
-            },
-            {
-                category: "Implementar a segurança do Azure",
-                question: "Um aplicativo cliente precisa de permissão para ler um blob específico em uma conta de armazenamento por um período limitado de 15 minutos, sem ter acesso à chave da conta de armazenamento. Como você pode conceder esse acesso temporário?",
-                options: ["Usando uma chave de acesso da conta de armazenamento.", "Criando uma política de acesso no nível do contêiner.", "Gerando uma Shared Access Signature (SAS) para o blob.", "Concedendo ao aplicativo uma função RBAC de 'Storage Blob Data Reader'."],
-                correct: 2,
-                explanation: "Uma Shared Access Signature (SAS) fornece acesso delegado e granular aos recursos em sua conta de armazenamento. Você pode especificar permissões (leitura, escrita), um período de validade e o recurso específico (neste caso, o blob)."
-            },
-            {
-                category: "Conectar e consumir serviços do Azure e de terceiros",
-                question: "Você está desenvolvendo uma solução que precisa reagir a eventos que ocorrem em serviços do Azure, como o upload de um novo blob para o Storage ou a criação de um novo recurso. Qual serviço é ideal para rotear esses eventos para manipuladores, como uma Azure Function?",
-                options: ["Azure Event Hubs", "Azure Service Bus", "Azure Event Grid", "Azure Queue Storage"],
-                correct: 2,
-                explanation: "O Azure Event Grid é um serviço de roteamento de eventos totalmente gerenciado que permite conectar facilmente fontes de eventos (como Blob Storage) a manipuladores de eventos (como Azure Functions) usando um modelo de publicação/assinatura."
-            },
-            {
-                category: "Desenvolver soluções de computação do Azure",
-                question: "Você está implementando uma Azure Function que será acionada sempre que uma nova mensagem chegar a uma fila do Azure Service Bus. Que tipo de componente você deve configurar na sua função para isso?",
-                options: ["Input Binding", "Output Binding", "Trigger (Gatilho)", "Webhook"],
-                correct: 2,
-                explanation: "Um Gatilho (Trigger) define como uma função é invocada. Para reagir a mensagens em uma fila do Service Bus, você deve usar um 'Service Bus Trigger'."
-            },
-            {
-                category: "Desenvolver para armazenamento do Azure",
-                question: "Ao desenvolver uma aplicação que usa o SDK do Azure Blob Storage, você precisa adicionar metadados personalizados (chave-valor) a um blob no momento do upload. Como isso é geralmente alcançado?",
-                options: ["Nomeando o blob com os metadados no formato 'chave=valor'.", "Carregando um arquivo JSON separado com os metadados.", "Passando um dicionário ou mapa de metadados como um parâmetro no método de upload.", "Definindo tags no contêiner que se aplicam a todos os blobs."],
-                correct: 2,
-                explanation: "O SDK do Azure Blob Storage, em linguagens como C#, Python e Java, fornece um parâmetro nos métodos de upload (como `UploadAsync` ou `upload_blob`) para passar um dicionário de strings que será armazenado como metadados do blob."
-            },
-             {
-                category: "Desenvolver soluções de computação do Azure",
-                question: "Você precisa executar um único contêiner rapidamente para uma tarefa de curta duração sem se preocupar com orquestração de contêineres ou gerenciamento de servidores. Qual é o serviço mais simples e rápido para essa finalidade?",
-                options: ["Azure Kubernetes Service (AKS)", "Azure App Service", "Azure Container Apps", "Azure Container Instances (ACI)"],
-                correct: 3,
-                explanation: "Azure Container Instances (ACI) é a solução mais rápida e simples para executar um único contêiner no Azure. Ele oferece faturamento por segundo e não requer a sobrecarga de gerenciamento de um orquestrador."
-            },
-            {
-                category: "Implementar a segurança do Azure",
-                question: "Sua aplicação web precisa autenticar usuários usando suas contas corporativas (Microsoft Entra ID) e também contas pessoais da Microsoft (MSA). Qual ponto de extremidade da plataforma de identidade da Microsoft você deve usar para suportar ambos os tipos de conta?",
-                options: ["https://login.microsoftonline.com/{tenant-id}", "https://login.microsoftonline.com/organizations", "https://login.microsoftonline.com/common", "https://login.microsoftonline.com/consumers"],
-                correct: 2,
-                explanation: "O ponto de extremidade '/common' é usado em aplicações multilocatárias para permitir que usuários de qualquer locatário do Microsoft Entra ID e usuários com contas pessoais da Microsoft (MSA) façam login."
-            },
-            {
-                category: "Desenvolver para armazenamento do Azure",
-                question: "Sua aplicação processa um grande volume de dados e precisa ser notificada em tempo real sobre todas as alterações (criações e atualizações) em um contêiner do Azure Cosmos DB. Qual recurso você deve utilizar?",
-                options: ["Stored Procedures do Cosmos DB", "Triggers do Cosmos DB", "Change Feed (Feed de Alterações)", "Consultas SQL periódicas"],
-                correct: 2,
-                explanation: "O Change Feed do Cosmos DB fornece um log persistente de alterações em um contêiner. Você pode criar um processador de feed de alterações para ouvir e reagir a esses eventos em tempo real."
-            },
-            {
-                category: "Monitorar e solucionar problemas de soluções do Azure",
-                question: "Para monitorar a disponibilidade e o tempo de resposta da página inicial da sua aplicação web a partir de diferentes localizações geográficas, qual recurso do Application Insights você deve configurar?",
-                options: ["Métricas em tempo real (Live Metrics)", "Mapa da Aplicação (Application Map)", "Testes de disponibilidade (Availability tests)", "Análise de falhas (Failure analysis)"],
-                correct: 2,
-                explanation: "Os testes de disponibilidade, anteriormente conhecidos como web tests, permitem configurar pings de URL ou testes de várias etapas para verificar a disponibilidade e a capacidade de resposta do seu aplicativo a partir de pontos de presença do Azure em todo o mundo."
-            },
-            {
-                category: "Conectar e consumir serviços do Azure e de terceiros",
-                question: "Você precisa garantir que mensagens enviadas para uma fila do Azure Service Bus sejam processadas estritamente na ordem em que foram enviadas (First-In, First-Out). O que você precisa habilitar na fila?",
-                options: ["Detecção de duplicatas", "Sessões (Sessions)", "Particionamento", "Tópicos e Assinaturas"],
-                correct: 1,
-                explanation: "As Sessões no Service Bus permitem o processamento de mensagens correlacionadas e ordenadas. Ao habilitar sessões em uma fila, um consumidor pode bloquear a sessão para garantir que processe as mensagens dessa sessão em ordem FIFO."
-            },
-            {
-                category: "Desenvolver soluções de computação do Azure",
-                question: "Um Web App no Azure App Service está enfrentando picos de tráfego imprevisíveis. Você precisa configurar o App Service para adicionar ou remover instâncias automaticamente com base no uso da CPU. Que recurso você deve configurar?",
-                options: ["Scale up (Escalar verticalmente)", "Deployment slots", "Autoscale (Escalabilidade automática)", "WebJobs"],
-                correct: 2,
-                explanation: "A Escalabilidade automática (Autoscale), também conhecida como scale out, permite definir regras para aumentar (adicionar) ou diminuir (remover) o número de instâncias que executam sua aplicação com base em métricas de desempenho, como o percentual de uso da CPU."
-            },
-            {
-                category: "Implementar a segurança do Azure",
-                question: "Sua aplicação precisa chamar a API do Microsoft Graph para ler informações do perfil do usuário autenticado. Qual é o primeiro passo para permitir que sua aplicação faça isso de forma segura?",
-                options: ["Obter as credenciais de administrador global do locatário.", "Registrar a aplicação no Microsoft Entra ID e conceder as permissões de API necessárias.", "Usar uma chave de API estática gerada no portal do Azure.", "Chamar a API anonimamente."],
-                correct: 1,
-                explanation: "Toda aplicação que se integra à plataforma de identidade da Microsoft deve ser registrada no Microsoft Entra ID. Durante o registro, você define as permissões de API (escopos) que sua aplicação precisa, como 'User.Read', para que o consentimento possa ser solicitado ao usuário."
-            },
-            {
-                category: "Conectar e consumir serviços do Azure e de terceiros",
-                question: "Você precisa enviar um grande volume de eventos de telemetria de dispositivos IoT para o Azure. O serviço deve suportar alta taxa de transferência, baixa latência e a capacidade de vários consumidores lerem o mesmo fluxo de eventos. Qual serviço é o mais adequado?",
-                options: ["Azure Queue Storage", "Azure Service Bus Queues", "Azure Event Hubs", "Azure Event Grid"],
-                correct: 2,
-                explanation: "O Azure Event Hubs é uma plataforma de streaming de big data e um serviço de ingestão de eventos. Ele foi projetado para ingerir milhões de eventos por segundo, tornando-o ideal para cenários de telemetria e IoT."
-            },
-            {
-                category: "Desenvolver soluções de computação do Azure",
-                question: "Você está configurando o arquivo `function.json` para uma Azure Function em Python. Você precisa que a função leia o conteúdo de um blob do Azure Storage sempre que for acionada por uma mensagem de fila. Como você define o acesso ao blob?",
-                options: ["Como um 'trigger' do tipo 'blob'.", "Como um 'output binding' do tipo 'blob'.", "Como um 'input binding' do tipo 'blob'.", "Não é possível ler um blob e ser acionado por uma fila ao mesmo tempo."],
-                correct: 2,
-                explanation: "Você usaria um 'Queue Trigger' para iniciar a função e um 'Blob Input Binding' para ler dados de um blob. O input binding permite que a função acesse dados de outro serviço de forma declarativa e sem escrever código de acesso a dados."
-            },
-            {
-                category: "Monitorar e solucionar problemas de soluções do Azure",
-                question: "Ao analisar logs no Application Insights, você deseja escrever consultas complexas para filtrar, agregar e visualizar dados de telemetria. Qual linguagem de consulta você usaria?",
-                options: ["SQL (Structured Query Language)", "PowerShell", "KQL (Kusto Query Language)", "JSON"],
-                correct: 2,
-                explanation: "O Azure Monitor Logs (e, por extensão, o Application Insights Analytics) usa a Kusto Query Language (KQL) para consultar e analisar os dados de telemetria. KQL é uma linguagem poderosa e somente leitura, otimizada para análise de big data."
-            },
-            {
-                category: "Desenvolver para armazenamento do Azure",
-                question: "Sua aplicação precisa realizar uma operação atômica que envolve múltiplos itens dentro da mesma partição lógica em um contêiner do Azure Cosmos DB. Qual a melhor forma de garantir a atomicidade dessa transação?",
-                options: ["Usar o Change Feed.", "Executar as operações sequencialmente e implementar uma lógica de reversão manual.", "Usar Stored Procedures do Cosmos DB.", "Usar o SDK de transações do .NET."],
-                correct: 2,
-                explanation: "Stored Procedures no Azure Cosmos DB são executadas dentro do escopo de uma partição lógica e garantem transações ACID (Atomicidade, Consistência, Isolamento, Durabilidade) para operações que envolvem múltiplos documentos."
-            },
-            {
-                category: "Implementar a segurança do Azure",
-                question: "Você está armazenando uma connection string de banco de dados para sua aplicação web. Para maximizar a segurança, onde essa connection string deve ser armazenada e como a aplicação deve acessá-la?",
-                options: ["No arquivo web.config ou appsettings.json, versionado no Git.", "Como uma variável de ambiente no servidor de desenvolvimento.", "No Azure Key Vault, acessada pela aplicação usando uma Identidade Gerenciada.", "Em um Azure Blob Storage com acesso público desabilitado."],
-                correct: 2,
-                explanation: "A prática recomendada é armazenar segredos, como connection strings, no Azure Key Vault. A aplicação deve então usar uma Identidade Gerenciada para se autenticar no Key Vault e recuperar o segredo em tempo de execução, evitando credenciais no código ou na configuração."
-            },
-            {
-                category: "Conectar e consumir serviços do Azure e de terceiros",
-                question: "Você está usando o Azure API Management e precisa transformar uma resposta de um serviço de backend (que retorna XML) para o formato JSON antes de enviá-la ao cliente. Onde você configuraria essa transformação?",
-                options: ["Nas configurações do Produto.", "Nas configurações da API.", "Em uma Política (Policy) na seção 'outbound' ou 'on-response'.", "Nas configurações de diagnóstico."],
-                correct: 2,
-                explanation: "As Políticas no APIM permitem modificar o comportamento da API em tempo de execução. A transformação de formato de resposta é uma tarefa comum realizada no pipeline de processamento de saída ('outbound'), usando políticas como `set-body` com expressões para converter de XML para JSON."
-            },
-            {
-                category: "Conectar e consumir serviços do Azure e de terceiros",
-                question: "Qual é a principal diferença de caso de uso entre Azure Queue Storage e Azure Service Bus Queues?",
-                options: ["Queue Storage é para comunicação entre componentes dentro do Azure; Service Bus é para comunicação com sistemas on-premises.", "Queue Storage oferece uma API REST simples e é ideal para filas grandes e simples; Service Bus oferece recursos avançados como sessões, transações e detecção de duplicatas.", "Queue Storage é mais caro, mas mais rápido que Service Bus.", "Não há diferenças significativas; são serviços intercambiáveis."],
-                correct: 1,
-                explanation: "O Azure Queue Storage é um serviço de enfileiramento simples e econômico, ideal para desacoplar componentes e para backlogs de trabalho. O Service Bus é um agente de mensagens corporativo completo, com recursos avançados para cenários de mensagens complexos que exigem maior confiabilidade e funcionalidades como FIFO (com sessões)."
-            },
-            {
-                category: "Desenvolver soluções de computação do Azure",
-                question: "Você precisa configurar o log de diagnóstico para um Azure App Service Web App para capturar logs do servidor web (IIS) e logs de rastreamento de solicitações com falha. Onde você habilita e configura essas opções?",
-                options: ["No Application Insights.", "No portal do Azure, na seção 'Diagnóstico e resolução de problemas' do App Service.", "No portal do Azure, na seção 'Logs de diagnóstico' (Diagnostic settings) do App Service.", "Modificando o arquivo web.config diretamente via Kudu."],
-                correct: 2,
-                explanation: "A seção 'Logs de diagnóstico' no portal do Azure para um App Service é o local central para habilitar vários tipos de logs, incluindo logs do servidor de aplicativos, logs do servidor web, mensagens de erro detalhadas e rastreamento de solicitações com falha, e para configurar seu destino (Filesystem, Blob Storage, etc.)."
-            },
-            {
-                category: "Desenvolver para armazenamento do Azure",
-                question: "Ao usar o SDK do Azure Cosmos DB para NoSQL, qual método é mais eficiente para ler um único item quando você já conhece seu ID e sua chave de partição?",
-                options: ["Executar uma consulta SQL como `SELECT * FROM c WHERE c.id = '...'`.", "Usar o método `ReadItemAsync` (ou equivalente) fornecendo o ID e a chave de partição.", "Listar todos os itens no contêiner e filtrar o resultado no lado do cliente.", "Usar o Change Feed para encontrar o item."],
-                correct: 1,
-                explanation: "A operação de leitura de ponto (`ReadItemAsync`) é a forma mais eficiente e de menor custo (em RUs) para buscar um único item, pois ela acessa o item diretamente usando seu ID e chave de partição, sem a sobrecarga de um mecanismo de consulta."
-            },
-            {
-                category: "Implementar a segurança do Azure",
-                question: "Uma aplicação precisa que um usuário conceda permissão para que ela leia seus e-mails através da API do Microsoft Graph. Que tipo de permissão de API é necessária para este cenário?",
-                options: ["Permissão de Aplicação (Application permission)", "Permissão Delegada (Delegated permission)", "Shared Access Signature (SAS)", "Chave de API (API Key)"],
-                correct: 1,
-                explanation: "Permissões Delegadas são usadas em cenários onde um usuário está presente e o aplicativo age em nome desse usuário. O aplicativo só poderá acessar o que o usuário conectado tem permissão para acessar. Permissões de Aplicação são para cenários de serviço/daemon, sem um usuário conectado."
-            },
-            {
-                category: "Conectar e consumir serviços do Azure e de terceiros",
-                question: "Você está projetando uma solução de mensagens. A principal exigência é que uma única mensagem de entrada seja entregue a múltiplos sistemas de backend que precisam processá-la de forma independente. Qual padrão e serviço do Azure se encaixam melhor?",
-                options: ["Padrão Competing Consumers usando uma Fila do Service Bus.", "Padrão Publish/Subscribe usando Tópicos e Assinaturas do Service Bus.", "Padrão Fan-out usando o Azure Event Grid.", "Padrão de Filas de Prioridade usando Queue Storage."],
-                correct: 1,
-                explanation: "O padrão Publish/Subscribe (Pub/Sub) é exatamente para este cenário. No Azure Service Bus, você publica a mensagem em um Tópico, e cada sistema de backend assina (subscribe) esse tópico com sua própria Assinatura, recebendo uma cópia da mensagem para processamento independente."
+                title: "Simulado 3",
+                data: [
+                    { category: "Desenvolver soluções de computação do Azure", question: "Em um Dockerfile, qual é o propósito de usar um build de múltiplos estágios (multi-stage build)?", options: ["Para criar imagens de contêiner para diferentes sistemas operacionais.", "Para reduzir o tamanho da imagem final, incluindo apenas os artefatos de tempo de execução e não as ferramentas de build.", "Para executar testes de unidade dentro do processo de build do Docker.", "Para facilitar a publicação da imagem em múltiplos registros de contêiner."], correct: 1, explanation: "Em um build de múltiplos estágios, você usa uma imagem base com o SDK e ferramentas para compilar o código (primeiro estágio) e, em seguida, copia apenas os binários compilados para uma imagem base de tempo de execução menor (segundo estágio), resultando em uma imagem final mais leve e segura." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Você precisa consultar blobs em uma conta de armazenamento com base em tags personalizadas que você aplicou a eles. Qual recurso do Azure Storage permite isso de forma eficiente?", options: ["Azure Cognitive Search", "Blob Index Tags", "Blob Metadata", "Lifecycle Management rules"], correct: 1, explanation: "Blob Index Tags permitem categorizar dados em sua conta de armazenamento usando atributos de tag de chave-valor. Ao contrário dos metadados, as tags de índice são indexadas e podem ser usadas como um índice secundário para consultar e filtrar dados com eficiência." },
+                    { category: "Implementar a segurança do Azure", question: "Qual é a principal diferença entre a função RBAC 'Storage Blob Data Contributor' e a função 'Contributor' no nível da conta de armazenamento?", options: ["Não há diferença, elas concedem as mesmas permissões.", "'Contributor' pode gerenciar a conta de armazenamento, mas não acessar os dados; 'Storage Blob Data Contributor' pode acessar os dados, mas não gerenciar a conta.", "'Storage Blob Data Contributor' tem permissões de leitura e escrita, enquanto 'Contributor' tem apenas permissões de escrita.", "'Contributor' se aplica apenas a contêineres, enquanto 'Storage Blob Data Contributor' se aplica a blobs individuais."], correct: 1, explanation: "As funções RBAC no Azure são divididas entre o plano de gerenciamento (gerenciar o recurso em si) e o plano de dados (acessar os dados dentro do recurso). 'Contributor' atua no plano de gerenciamento, enquanto 'Storage Blob Data Contributor' atua no plano de dados para blobs." },
+                    { category: "Monitorar e solucionar problemas de soluções do Azure", question: "Como você pode garantir que as telemetrias de uma solicitação HTTP e suas chamadas de dependência subsequentes sejam agrupadas em uma única operação no Application Insights?", options: ["Adicionando um timestamp personalizado a cada item de telemetria.", "Garantindo que todos os componentes da aplicação usem a mesma Instrumentation Key.", "O SDK do Application Insights correlaciona a telemetria automaticamente usando um Operation ID.", "Configurando regras de amostragem (sampling)."], correct: 2, explanation: "O Application Insights SDK propaga um contexto de correlação (como Operation ID e Parent ID) através das chamadas de processo e de rede. Isso permite que o Application Insights reconstrua o fluxo de uma transação completa, desde a solicitação inicial até as dependências e exceções." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Para que serve a Fila de Mensagens Mortas (Dead-Letter Queue) em uma Fila ou Assinatura do Azure Service Bus?", options: ["É uma fila para armazenar mensagens que excederam o tempo de vida (TTL).", "É um local para armazenar mensagens que não puderam ser processadas com sucesso ou foram explicitamente enviadas para lá.", "É uma fila secundária usada para balanceamento de carga.", "É um log de todas as mensagens que foram processadas com sucesso."], correct: 1, explanation: "A dead-letter queue (DLQ) é um sub-recurso de uma fila ou assinatura que retém mensagens que falharam no processamento por algum motivo (ex: excederam a contagem de entregas) ou que foram manualmente 'mortas'. Isso permite que as mensagens sejam inspecionadas e reprocessadas posteriormente." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Qual plano do Azure App Service oferece o maior nível de isolamento de rede e segurança, executando seus aplicativos em um ambiente dedicado em uma VNet do Azure?", options: ["Free", "Basic", "Premium", "Isolated"], correct: 3, explanation: "O plano de App Service Isolado é projetado para cargas de trabalho críticas que exigem isolamento completo. Ele hospeda seus aplicativos em um Ambiente do App Service (ASE), que é uma implantação dedicada do Azure App Service em sua própria rede virtual." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "No Azure Cosmos DB, como o nível de consistência 'Eventual' afeta o custo de uma operação de leitura em RUs (Request Units)?", options: ["Ele tem o custo mais alto de RU porque garante a consistência.", "Ele não afeta o custo de RU.", "Ele tem o custo mais baixo de RU entre todos os níveis de consistência.", "O custo é variável e imprevisível."], correct: 2, explanation: "Níveis de consistência mais fracos, como o 'Eventual', consomem menos recursos do sistema e, portanto, custam menos RUs para operações de leitura em comparação com níveis mais fortes como 'Strong' ou 'Bounded Staleness'." },
+                    { category: "Implementar a segurança do Azure", question: "Ao registrar um aplicativo no Microsoft Entra ID para um SPA (Single-Page Application), que tipo de URI de redirecionamento (Redirect URI) você deve configurar?", options: ["Web", "Public client/native (mobile & desktop)", "SPA (Single-Page Application)", "API"], correct: 2, explanation: "Configurar a plataforma como 'SPA' habilita o fluxo de código de autorização com PKCE (Proof Key for Code Exchange), que é a prática recomendada e mais segura para SPAs, em vez do fluxo implícito mais antigo." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Qual recurso do Azure Event Hubs permite capturar automaticamente os dados de streaming para uma conta do Azure Blob Storage ou Azure Data Lake Storage?", options: ["Consumer Groups", "Partitions", "Capture", "Geo-disaster recovery"], correct: 2, explanation: "O Event Hubs Capture é um recurso que permite especificar uma conta de armazenamento onde os dados do Event Hub serão automaticamente entregues em lote, no formato Avro, facilitando o processamento posterior e a análise de longo prazo." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "O que é uma 'revision' em Azure Container Apps?", options: ["Uma imagem de contêiner armazenada no ACR.", "Uma versão imutável de um Container App, criada sempre que você altera a configuração.", "Um backup da sua aplicação.", "Um slot de implantação, semelhante ao App Service."], correct: 1, explanation: "Cada vez que você faz uma alteração em um Container App que cria uma nova versão (como atualizar a imagem do contêiner ou as variáveis de ambiente), uma nova revisão imutável é criada. Você pode dividir o tráfego entre diferentes revisões para testes A/B ou implantações graduais." },
+                    { category: "Monitorar e solucionar problemas de soluções do Azure", question: "Você precisa criar um alerta no Azure Monitor que seja acionado quando a média de uso da CPU de um Web App ultrapassar 80% por 5 minutos consecutivos. Que tipo de regra de alerta você criaria?", options: ["Regra de alerta de log (Log alert rule)", "Regra de alerta de métrica (Metric alert rule)", "Regra de alerta de atividade (Activity log alert rule)", "Teste de disponibilidade (Availability test)"], correct: 1, explanation: "Alertas de métrica são ideais para esse cenário, pois avaliam métricas de recursos (como 'Percentage CPU') em intervalos regulares e disparam um alerta quando uma condição (limiar, agregação, período) é atendida." },
+                    { category: "Implementar a segurança do Azure", question: "Como você pode rotacionar de forma segura uma chave de acesso para uma conta de armazenamento que está sendo usada por várias aplicações sem causar tempo de inatividade?", options: ["Excluir a chave e criar uma nova imediatamente.", "Usar a segunda chave de acesso (secundária) para atualizar as aplicações, regenerar a primeira (primária) e, em seguida, atualizar as aplicações para usar a nova chave primária.", "Criar uma SAS token com validade infinita.", "Mover todos os dados para uma nova conta de armazenamento com novas chaves."], correct: 1, explanation: "As contas de armazenamento fornecem duas chaves de acesso para permitir a rotação sem interrupções. O procedimento padrão é migrar todas as aplicações para usar a chave secundária, regenerar a primária e, em seguida, migrar as aplicações de volta para a nova chave primária." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Qual é a maneira recomendada de processar mensagens de uma fila do Azure Queue Storage para garantir que, se o processador falhar, a mensagem possa ser processada por outra instância?", options: ["Ler a mensagem sem excluí-la e usar um temporizador para verificar se ela ainda está lá.", "Obter a mensagem (o que a torna invisível por um período) e, após o processamento bem-sucedido, excluí-la explicitamente.", "Copiar a mensagem para uma fila de backup antes de processá-la.", "Usar o método PeekMessage para ler a mensagem sem alterar sua visibilidade."], correct: 1, explanation: "O padrão de processamento de filas é 'obter-e-excluir'. Você obtém a mensagem, o que a torna invisível. Se seu código processá-la com sucesso, você a exclui. Se seu processo falhar, o tempo de invisibilidade expira e a mensagem reaparece na fila para outra instância tentar." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Você está usando o Azure API Management e quer aplicar um conjunto de políticas (ex: validação de JWT, limitação de taxa) a múltiplas APIs. Qual é a maneira mais eficiente de fazer isso?", options: ["Copiar e colar as políticas em cada operação de cada API.", "Criar um 'Produto', adicionar as APIs a ele e aplicar as políticas no nível do produto.", "Criar uma política global que se aplica a todas as APIs.", "Usar o Azure Policy para impor as configurações."], correct: 1, explanation: "Produtos no APIM são uma forma de agrupar uma ou mais APIs e oferecer acesso a elas através de chaves de assinatura. As políticas podem ser aplicadas no nível do produto, e elas serão herdadas por todas as APIs e operações dentro desse produto, promovendo a reutilização." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Qual é a principal diferença entre 'escalar verticalmente' (scale up) e 'escalar horizontalmente' (scale out) um Azure App Service?", options: ["Scale up aumenta o número de instâncias; scale out aumenta os recursos (CPU/memória) da instância existente.", "Scale up aumenta os recursos (CPU/memória) da instância; scale out aumenta o número de instâncias.", "Scale up é automático; scale out é manual.", "Scale up é para aplicações em contêiner; scale out é para aplicações baseadas em código."], correct: 1, explanation: "Escalar verticalmente (scale up) significa mudar para um plano de serviço (tier) superior com mais CPU, memória e disco. Escalar horizontalmente (scale out) significa aumentar o número de instâncias de VM que executam seu aplicativo." },
+                    { category: "Implementar a segurança do Azure", question: "Sua aplicação precisa acessar o Azure Key Vault. Você está usando uma Identidade Gerenciada atribuída pelo sistema. O que acontece com a identidade se você excluir o recurso do Azure (ex: o Web App) ao qual ela está associada?", options: ["A identidade permanece e pode ser atribuída a outro recurso.", "A identidade é desabilitada, mas não excluída.", "A identidade é automaticamente excluída junto com o recurso.", "Você é solicitado a mover a identidade para outro recurso antes da exclusão."], correct: 2, explanation: "A identidade atribuída pelo sistema está vinculada ao ciclo de vida do recurso do Azure. Se o recurso principal for excluído, a identidade associada a ele também será excluída automaticamente." },
+                    { category: "Desenvolver para armazenamento do Azure", question: "Você precisa armazenar 5 TB de dados de log que raramente serão acessados, mas precisam ser mantidos por 7 anos por motivos de conformidade. Qual camada de acesso (access tier) do Azure Blob Storage é a mais econômica para este cenário?", options: ["Hot", "Cool", "Archive", "Premium"], correct: 2, explanation: "A camada de Archive é otimizada para dados que raramente são acessados e armazenados por longos períodos. Ela oferece o menor custo de armazenamento, mas tem custos de recuperação mais altos e latência de várias horas para acessar os dados." },
+                    { category: "Conectar e consumir serviços do Azure e de terceiros", question: "Ao usar o SDK do Azure Service Bus, qual é a diferença entre os modos de recebimento `ReceiveAndDelete` e `PeekLock`?", options: ["`ReceiveAndDelete` é mais rápido, mas menos confiável.", "`ReceiveAndDelete` exclui a mensagem da fila assim que é recebida; `PeekLock` torna a mensagem invisível e requer uma confirmação explícita para ser excluída.", "`PeekLock` é usado para Tópicos e `ReceiveAndDelete` para Filas.", "Não há diferença no comportamento, apenas no nome."], correct: 1, explanation: "`PeekLock` é o modo padrão e mais seguro. Ele bloqueia a mensagem, tornando-a invisível. Seu código então processa a mensagem e, se tiver sucesso, a completa (excluindo-a). Se falhar, a mensagem pode ser abandonada e se tornará visível novamente. `ReceiveAndDelete` é uma operação de uma fase que remove a mensagem imediatamente." },
+                    { category: "Desenvolver soluções de computação do Azure", question: "Qual binding de uma Azure Function permite que a função retorne um valor que será enviado como uma resposta HTTP para o cliente?", options: ["`httpTrigger`", "`http` output binding", "`queue` output binding", "O valor de retorno da função é usado automaticamente se o trigger for HTTP."], correct: 3, explanation: "Para um gatilho HTTP (`httpTrigger`), o valor retornado pela função é, por convenção, usado para formar o corpo da resposta HTTP, simplificando o código para APIs simples." }
+                ]
             }
         ];
 
-        const STORAGE_KEY = 'az204_quiz_progress';
+        const STORAGE_KEY = 'az204_quiz_session';
 
         const startScreen = document.getElementById('start-screen');
         const quizScreen = document.getElementById('quiz-screen');
         const resultsScreen = document.getElementById('results-screen');
         const reviewScreen = document.getElementById('review-screen');
-
-        const startTitle = document.getElementById('start-title');
-        const startMessage = document.getElementById('start-message');
+        
+        const quizTitleEl = document.getElementById('quiz-title');
         const startButtonsContainer = document.getElementById('start-buttons');
+        const resumeContainer = document.getElementById('resume-container');
 
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
         const finishBtn = document.getElementById('finish-btn');
         const reviewBtn = document.getElementById('review-btn');
-        const restartBtn = document.getElementById('restart-btn');
-        const restartFromReviewBtn = document.getElementById('restart-from-review-btn');
+        const backToHomeBtn = document.getElementById('back-to-home-btn');
+        const backToHomeFromReviewBtn = document.getElementById('back-to-home-from-review-btn');
 
         const questionNumberEl = document.getElementById('question-number');
         const questionTextEl = document.getElementById('question-text');
@@ -358,12 +235,15 @@
 
         const reviewContainer = document.getElementById('review-container');
         
+        let currentQuizId = null;
+        let currentQuizData = [];
         let currentQuestionIndex = 0;
-        let userAnswers = new Array(quizData.length).fill(null);
+        let userAnswers = [];
         let quizChart = null;
-
+        
         function saveProgress() {
             const progress = {
+                quizId: currentQuizId,
                 userAnswers: userAnswers,
                 currentQuestionIndex: currentQuestionIndex
             };
@@ -372,34 +252,44 @@
 
         function clearProgress() {
             localStorage.removeItem(STORAGE_KEY);
+            setupStartScreen();
         }
 
-        function showQuizScreen() {
+        function showScreen(screen) {
             startScreen.classList.add('hidden');
+            quizScreen.classList.add('hidden');
             resultsScreen.classList.add('hidden');
             reviewScreen.classList.add('hidden');
-            quizScreen.classList.remove('hidden');
-            displayQuestion();
+            screen.classList.remove('hidden');
         }
-        
-        function startNewQuiz() {
-            clearProgress();
+
+        function startNewQuiz(quizId) {
+            currentQuizId = quizId;
+            currentQuizData = allQuizzes[quizId].data;
             currentQuestionIndex = 0;
-            userAnswers.fill(null);
-            showQuizScreen();
+            userAnswers = new Array(currentQuizData.length).fill(null);
+            
+            saveProgress();
+            showScreen(quizScreen);
+            displayQuestion();
         }
 
         function resumeQuiz() {
             const savedProgress = JSON.parse(localStorage.getItem(STORAGE_KEY));
             if (savedProgress) {
+                currentQuizId = savedProgress.quizId;
+                currentQuizData = allQuizzes[currentQuizId].data;
                 userAnswers = savedProgress.userAnswers;
                 currentQuestionIndex = savedProgress.currentQuestionIndex;
+                
+                showScreen(quizScreen);
+                displayQuestion();
             }
-            showQuizScreen();
         }
 
         function displayQuestion() {
-            const question = quizData[currentQuestionIndex];
+            quizTitleEl.textContent = allQuizzes[currentQuizId].title;
+            const question = currentQuizData[currentQuestionIndex];
             questionNumberEl.textContent = currentQuestionIndex + 1;
             questionTextEl.textContent = question.question;
             optionsContainer.innerHTML = '';
@@ -435,7 +325,7 @@
             prevBtn.disabled = currentQuestionIndex === 0;
             prevBtn.classList.toggle('opacity-50', prevBtn.disabled);
 
-            if (currentQuestionIndex === quizData.length - 1) {
+            if (currentQuestionIndex === currentQuizData.length - 1) {
                 nextBtn.classList.add('hidden');
                 finishBtn.classList.remove('hidden');
             } else {
@@ -445,7 +335,7 @@
         }
         
         function showNextQuestion() {
-            if (currentQuestionIndex < quizData.length - 1) {
+            if (currentQuestionIndex < currentQuizData.length - 1) {
                 currentQuestionIndex++;
                 displayQuestion();
                 saveProgress();
@@ -461,9 +351,8 @@
         }
 
         function finishQuiz() {
-            clearProgress();
-            quizScreen.classList.add('hidden');
-            resultsScreen.classList.remove('hidden');
+            localStorage.removeItem(STORAGE_KEY);
+            showScreen(resultsScreen);
             displayResults();
         }
 
@@ -472,7 +361,7 @@
             const categoryResults = {};
             const categoryTotals = {};
 
-            quizData.forEach((q, index) => {
+            currentQuizData.forEach((q, index) => {
                 if (!categoryResults[q.category]) {
                     categoryResults[q.category] = 0;
                     categoryTotals[q.category] = 0;
@@ -485,10 +374,10 @@
                 }
             });
 
-            const percentage = Math.round((correctAnswers / quizData.length) * 100);
+            const percentage = Math.round((correctAnswers / currentQuizData.length) * 100);
             scorePercentageEl.textContent = percentage;
             scoreCorrectEl.textContent = correctAnswers;
-            scoreTotalEl.textContent = quizData.length;
+            scoreTotalEl.textContent = currentQuizData.length;
 
             const categoryLabels = Object.keys(categoryResults);
             const categoryScores = categoryLabels.map(cat => Math.round((categoryResults[cat] / categoryTotals[cat]) * 100));
@@ -500,7 +389,7 @@
             quizChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: categoryLabels,
+                    labels: categoryLabels.map(l => l.length > 35 ? l.substring(0, 32) + '...' : l),
                     datasets: [{
                         label: 'Desempenho por Categoria (%)',
                         data: categoryScores,
@@ -519,24 +408,13 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                boxWidth: 20,
-                                padding: 20
-                            }
-                        },
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed !== null) {
-                                        label += context.parsed + '%';
-                                    }
-                                    return label;
+                                    let fullLabel = categoryLabels[context.dataIndex];
+                                    let value = context.parsed;
+                                    return `${fullLabel}: ${value}%`;
                                 }
                             }
                         }
@@ -546,11 +424,10 @@
         }
         
         function reviewAnswers() {
-            resultsScreen.classList.add('hidden');
-            reviewScreen.classList.remove('hidden');
+            showScreen(reviewScreen);
             reviewContainer.innerHTML = '';
 
-            quizData.forEach((question, index) => {
+            currentQuizData.forEach((question, index) => {
                 const userAnswer = userAnswers[index];
                 const isCorrect = userAnswer === question.correct;
 
@@ -586,39 +463,33 @@
             });
         }
 
-        function resetStartScreen() {
-            startTitle.textContent = 'Prepare-se para a Certificação';
-            startMessage.textContent = 'Este simulado contém 30 questões baseadas na distribuição de tópicos do exame oficial AZ-204. Responda a cada pergunta para testar seus conhecimentos e identifique áreas para aprimoramento. Boa sorte!';
-            startButtonsContainer.innerHTML = `
-                <button id="start-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors text-lg w-full sm:w-auto">
-                    Iniciar Simulado
-                </button>
-            `;
-            startButtonsContainer.querySelector('#start-btn').addEventListener('click', startNewQuiz);
-        }
-
         function setupStartScreen() {
+            startButtonsContainer.innerHTML = '';
+            resumeContainer.innerHTML = '';
+            
+            allQuizzes.forEach((quiz, index) => {
+                const button = document.createElement('button');
+                button.textContent = quiz.title;
+                button.className = 'bg-sky-600 text-white font-bold py-4 px-6 rounded-lg hover:bg-sky-700 transition-colors text-lg';
+                button.onclick = () => startNewQuiz(index);
+                startButtonsContainer.appendChild(button);
+            });
+
             const savedProgress = localStorage.getItem(STORAGE_KEY);
             if (savedProgress) {
                 const progress = JSON.parse(savedProgress);
+                const quizTitle = allQuizzes[progress.quizId].title;
                 const questionNum = progress.currentQuestionIndex + 1;
-                startTitle.textContent = 'Bem-vindo de volta!';
-                startMessage.textContent = `Encontramos um progresso salvo. Você parou na questão ${questionNum}. Deseja continuar?`;
                 
-                startButtonsContainer.innerHTML = `
-                    <button id="resume-btn" class="bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-700 transition-colors w-full sm:w-auto">Continuar Simulado</button>
-                    <button id="new-quiz-btn" class="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-600 transition-colors w-full sm:w-auto">Começar Novo</button>
-                    <button id="clear-progress-btn" class="bg-red-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-600 transition-colors w-full sm:w-auto">Limpar Progresso</button>
+                resumeContainer.innerHTML = `
+                    <p class="text-slate-600 mb-4">Encontramos um progresso salvo no <strong>${quizTitle}</strong> (questão ${questionNum}).</p>
+                    <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                        <button id="resume-btn" class="bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-emerald-700 transition-colors w-full sm:w-auto">Continuar Simulado</button>
+                        <button id="clear-progress-btn" class="bg-red-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-600 transition-colors w-full sm:w-auto">Limpar Progresso</button>
+                    </div>
                 `;
-                startButtonsContainer.querySelector('#resume-btn').addEventListener('click', resumeQuiz);
-                startButtonsContainer.querySelector('#new-quiz-btn').addEventListener('click', startNewQuiz);
-                startButtonsContainer.querySelector('#clear-progress-btn').addEventListener('click', () => {
-                    clearProgress();
-                    resetStartScreen();
-                });
-
-            } else {
-                 document.getElementById('start-btn').addEventListener('click', startNewQuiz);
+                resumeContainer.querySelector('#resume-btn').addEventListener('click', resumeQuiz);
+                resumeContainer.querySelector('#clear-progress-btn').addEventListener('click', clearProgress);
             }
         }
         
@@ -626,10 +497,19 @@
         prevBtn.addEventListener('click', showPrevQuestion);
         finishBtn.addEventListener('click', finishQuiz);
         reviewBtn.addEventListener('click', reviewAnswers);
-        restartBtn.addEventListener('click', startNewQuiz);
-        restartFromReviewBtn.addEventListener('click', startNewQuiz);
+        
+        const goToHome = () => {
+            showScreen(startScreen);
+            setupStartScreen();
+        };
 
-        document.addEventListener('DOMContentLoaded', setupStartScreen);
+        backToHomeBtn.addEventListener('click', goToHome);
+        backToHomeFromReviewBtn.addEventListener('click', goToHome);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showScreen(startScreen);
+            setupStartScreen();
+        });
     </script>
 
 </body>
