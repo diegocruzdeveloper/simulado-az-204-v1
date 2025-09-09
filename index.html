@@ -59,13 +59,15 @@
         <main id="main-content">
 
             <div id="start-screen" class="bg-white p-8 rounded-lg shadow-md text-center">
-                <h2 class="text-2xl font-semibold mb-4">Prepare-se para a Certificação</h2>
-                <p class="text-slate-600 mb-6">
+                <h2 id="start-title" class="text-2xl font-semibold mb-4">Prepare-se para a Certificação</h2>
+                <p id="start-message" class="text-slate-600 mb-6">
                     Este simulado contém 30 questões baseadas na distribuição de tópicos do exame oficial AZ-204. Responda a cada pergunta para testar seus conhecimentos e identifique áreas para aprimoramento. Boa sorte!
                 </p>
-                <button id="start-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors text-lg">
-                    Iniciar Simulado
-                </button>
+                <div id="start-buttons" class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                    <button id="start-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors text-lg w-full sm:w-auto">
+                        Iniciar Simulado
+                    </button>
+                </div>
             </div>
 
             <div id="quiz-screen" class="hidden">
@@ -328,13 +330,17 @@
             }
         ];
 
+        const STORAGE_KEY = 'az204_quiz_progress';
 
         const startScreen = document.getElementById('start-screen');
         const quizScreen = document.getElementById('quiz-screen');
         const resultsScreen = document.getElementById('results-screen');
         const reviewScreen = document.getElementById('review-screen');
 
-        const startBtn = document.getElementById('start-btn');
+        const startTitle = document.getElementById('start-title');
+        const startMessage = document.getElementById('start-message');
+        const startButtonsContainer = document.getElementById('start-buttons');
+
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
         const finishBtn = document.getElementById('finish-btn');
@@ -356,16 +362,40 @@
         let userAnswers = new Array(quizData.length).fill(null);
         let quizChart = null;
 
-        function startQuiz() {
+        function saveProgress() {
+            const progress = {
+                userAnswers: userAnswers,
+                currentQuestionIndex: currentQuestionIndex
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+        }
+
+        function clearProgress() {
+            localStorage.removeItem(STORAGE_KEY);
+        }
+
+        function showQuizScreen() {
             startScreen.classList.add('hidden');
             resultsScreen.classList.add('hidden');
             reviewScreen.classList.add('hidden');
             quizScreen.classList.remove('hidden');
-            
+            displayQuestion();
+        }
+        
+        function startNewQuiz() {
+            clearProgress();
             currentQuestionIndex = 0;
             userAnswers.fill(null);
-            
-            displayQuestion();
+            showQuizScreen();
+        }
+
+        function resumeQuiz() {
+            const savedProgress = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            if (savedProgress) {
+                userAnswers = savedProgress.userAnswers;
+                currentQuestionIndex = savedProgress.currentQuestionIndex;
+            }
+            showQuizScreen();
         }
 
         function displayQuestion() {
@@ -394,6 +424,7 @@
                     document.querySelectorAll('.quiz-option').forEach(opt => opt.classList.remove('selected'));
                     label.classList.add('selected');
                     userAnswers[currentQuestionIndex] = index;
+                    saveProgress();
                 });
             });
 
@@ -417,6 +448,7 @@
             if (currentQuestionIndex < quizData.length - 1) {
                 currentQuestionIndex++;
                 displayQuestion();
+                saveProgress();
             }
         }
 
@@ -424,10 +456,12 @@
             if (currentQuestionIndex > 0) {
                 currentQuestionIndex--;
                 displayQuestion();
+                saveProgress();
             }
         }
 
         function finishQuiz() {
+            clearProgress();
             quizScreen.classList.add('hidden');
             resultsScreen.classList.remove('hidden');
             displayResults();
@@ -552,14 +586,52 @@
             });
         }
 
-        startBtn.addEventListener('click', startQuiz);
+        function resetStartScreen() {
+            startTitle.textContent = 'Prepare-se para a Certificação';
+            startMessage.textContent = 'Este simulado contém 30 questões baseadas na distribuição de tópicos do exame oficial AZ-204. Responda a cada pergunta para testar seus conhecimentos e identifique áreas para aprimoramento. Boa sorte!';
+            startButtonsContainer.innerHTML = `
+                <button id="start-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors text-lg w-full sm:w-auto">
+                    Iniciar Simulado
+                </button>
+            `;
+            startButtonsContainer.querySelector('#start-btn').addEventListener('click', startNewQuiz);
+        }
+
+        function setupStartScreen() {
+            const savedProgress = localStorage.getItem(STORAGE_KEY);
+            if (savedProgress) {
+                const progress = JSON.parse(savedProgress);
+                const questionNum = progress.currentQuestionIndex + 1;
+                startTitle.textContent = 'Bem-vindo de volta!';
+                startMessage.textContent = `Encontramos um progresso salvo. Você parou na questão ${questionNum}. Deseja continuar?`;
+                
+                startButtonsContainer.innerHTML = `
+                    <button id="resume-btn" class="bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-700 transition-colors w-full sm:w-auto">Continuar Simulado</button>
+                    <button id="new-quiz-btn" class="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-600 transition-colors w-full sm:w-auto">Começar Novo</button>
+                    <button id="clear-progress-btn" class="bg-red-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-600 transition-colors w-full sm:w-auto">Limpar Progresso</button>
+                `;
+                startButtonsContainer.querySelector('#resume-btn').addEventListener('click', resumeQuiz);
+                startButtonsContainer.querySelector('#new-quiz-btn').addEventListener('click', startNewQuiz);
+                startButtonsContainer.querySelector('#clear-progress-btn').addEventListener('click', () => {
+                    clearProgress();
+                    resetStartScreen();
+                });
+
+            } else {
+                 document.getElementById('start-btn').addEventListener('click', startNewQuiz);
+            }
+        }
+        
         nextBtn.addEventListener('click', showNextQuestion);
         prevBtn.addEventListener('click', showPrevQuestion);
         finishBtn.addEventListener('click', finishQuiz);
         reviewBtn.addEventListener('click', reviewAnswers);
-        restartBtn.addEventListener('click', startQuiz);
-        restartFromReviewBtn.addEventListener('click', startQuiz);
+        restartBtn.addEventListener('click', startNewQuiz);
+        restartFromReviewBtn.addEventListener('click', startNewQuiz);
+
+        document.addEventListener('DOMContentLoaded', setupStartScreen);
     </script>
 
 </body>
 </html>
+
