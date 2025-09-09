@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Exame AZ-204</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .quiz-option.selected {
+            background-color: #e0f2fe;
+            border-color: #0284c7;
+        }
+        .quiz-option.correct {
+            background-color: #dcfce7;
+            border-color: #22c55e;
+        }
+        .quiz-option.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+        .chart-container {
+            position: relative; 
+            width: 100%; 
+            max-width: 400px; 
+            margin-left: auto; 
+            margin-right: auto; 
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- 
+        Chosen Palette: Slate Blue and Warm Gray
+        Application Structure Plan: A single-page application (SPA) designed as an interactive quiz simulator. The user flow is structured logically: 1. A welcome/start screen introduces the exam. 2. A main quiz section displays one question at a time with navigation, allowing focused problem-solving. 3. A results screen provides an immediate score and a visual breakdown of performance by topic using a chart. 4. A review section allows the user to see all questions, their answers, the correct answers, and explanations. This structure was chosen to mimic a real testing environment, reduce cognitive load by presenting information sequentially, and provide clear, actionable feedback for learning.
+        Visualization & Content Choices: Report Info: AZ-204 exam topic weights -> Goal: Display user's performance breakdown -> Viz Method: Doughnut Chart (Chart.js/Canvas) -> Interaction: Hover to see percentages -> Justification: The doughnut chart provides a quick, intuitive visual comparison of the user's strengths and weaknesses across the official exam categories, making it easier to identify areas needing more study. Report Info: Exam questions and answers -> Goal: Test user knowledge -> Presentation Method: Interactive multiple-choice list -> Interaction: Click to select an answer, navigate with buttons -> Justification: This is the standard and most effective format for a practice exam, allowing for direct interaction and state tracking.
+        CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-4xl">
+
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-sky-700">Simulador de Exame AZ-204</h1>
+            <p class="text-slate-600 mt-2">Developing Solutions for Microsoft Azure</p>
+        </header>
+
+        <main id="main-content">
+
+            <div id="start-screen" class="bg-white p-8 rounded-lg shadow-md text-center">
+                <h2 class="text-2xl font-semibold mb-4">Prepare-se para a Certificação</h2>
+                <p class="text-slate-600 mb-6">
+                    Este simulado contém 30 questões baseadas na distribuição de tópicos do exame oficial AZ-204. Responda a cada pergunta para testar seus conhecimentos e identifique áreas para aprimoramento. Boa sorte!
+                </p>
+                <button id="start-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors text-lg">
+                    Iniciar Simulado
+                </button>
+            </div>
+
+            <div id="quiz-screen" class="hidden">
+                <div class="bg-white p-6 md:p-8 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-slate-700">Questão <span id="question-number"></span> de 30</h3>
+                        <div id="timer" class="text-lg font-semibold text-sky-700"></div>
+                    </div>
+                    <p id="question-text" class="text-xl mb-6 leading-relaxed"></p>
+                    <div id="options-container" class="space-y-4"></div>
+                </div>
+                <div class="flex justify-between mt-8">
+                    <button id="prev-btn" class="bg-slate-300 text-slate-800 font-bold py-2 px-6 rounded-lg hover:bg-slate-400 transition-colors">Anterior</button>
+                    <button id="next-btn" class="bg-sky-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-sky-700 transition-colors">Próxima</button>
+                    <button id="finish-btn" class="hidden bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-emerald-700 transition-colors">Finalizar</button>
+                </div>
+            </div>
+
+            <div id="results-screen" class="hidden">
+                 <div class="bg-white p-8 rounded-lg shadow-md text-center">
+                    <h2 class="text-2xl font-semibold mb-2">Simulado Concluído!</h2>
+                    <p class="text-slate-600 mb-6">Confira seu desempenho abaixo.</p>
+                    <p class="text-5xl font-bold mb-4"><span id="score-percentage"></span>%</p>
+                    <p class="text-lg text-slate-700 mb-8">Você acertou <span id="score-correct"></span> de <span id="score-total"></span> questões.</p>
+                    
+                    <div class="chart-container">
+                        <canvas id="results-chart"></canvas>
+                    </div>
+
+                    <div class="mt-8 flex justify-center space-x-4">
+                        <button id="review-btn" class="bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-700 transition-colors">Revisar Respostas</button>
+                        <button id="restart-btn" class="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-600 transition-colors">Tentar Novamente</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="review-screen" class="hidden">
+                <h2 class="text-2xl font-semibold mb-6 text-center">Revisão das Questões</h2>
+                <div id="review-container" class="space-y-8"></div>
+                <div class="text-center mt-8">
+                    <button id="restart-from-review-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors">Tentar Novamente</button>
+                </div>
+            </div>
+
+        </main>
+
+    </div>
+
+    <script>
+        const quizData = [
+            { 
+                category: "Desenvolver soluções de computação do Azure", 
+                question: "Você precisa implantar uma aplicação web em contêiner que necessita de acesso a uma Virtual Network (VNet) e deve escalar com base em requisições HTTP. Qual serviço do Azure é a escolha mais apropriada?", 
+                options: ["Azure Container Instances (ACI)", "Azure Container Apps", "Azure Functions com plano Premium", "Azure App Service com plano Básico"], 
+                correct: 1, 
+                explanation: "Azure Container Apps é projetado para executar microserviços e aplicações em contêineres, oferece escalonamento baseado em eventos (como requisições HTTP) e se integra nativamente com VNets, tornando-o ideal para este cenário." 
+            },
+            { 
+                category: "Desenvolver para armazenamento do Azure", 
+                question: "Sua aplicação precisa ler dados de uma conta do Azure Cosmos DB usada por equipes em diferentes continentes. Para garantir baixa latência de leitura para todos os usuários, mas mantendo a consistência forte para escritas na região primária, qual nível de consistência você deve configurar?", 
+                options: ["Strong (Forte)", "Bounded Staleness (Obsolescência Limitada)", "Session (Sessão)", "Eventual (Eventual)"], 
+                correct: 2, 
+                explanation: "O nível de consistência de Sessão garante que as leituras dentro da mesma sessão do cliente sejam consistentes (read-your-own-writes), o que é um ótimo equilíbrio entre desempenho e consistência para aplicações distribuídas globalmente." 
+            },
+            {
+                category: "Implementar a segurança do Azure",
+                question: "Uma Azure Function precisa acessar segredos armazenados em um Azure Key Vault sem usar chaves de acesso ou segredos no código ou na configuração da aplicação. Qual é a melhor prática para alcançar isso?",
+                options: ["Usar uma connection string para o Key Vault no local.settings.json.", "Usar uma Identidade Gerenciada (Managed Identity) para a Azure Function.", "Armazenar o segredo do Key Vault diretamente nas Application Settings da Function App.", "Usar uma Shared Access Signature (SAS) com validade longa."],
+                correct: 1,
+                explanation: "Identidades Gerenciadas fornecem uma identidade para a Azure Function no Microsoft Entra ID. Você pode conceder a essa identidade acesso ao Key Vault, permitindo que a função acesse os segredos de forma segura sem credenciais no código."
+            },
+            {
+                category: "Conectar e consumir serviços do Azure e de terceiros",
+                question: "Sua organização expõe várias APIs de microsserviços e deseja centralizar o gerenciamento de autenticação, autorização, limitação de taxa (rate limiting) e monitoramento. Qual serviço do Azure foi projetado para essa finalidade?",
+                options: ["Azure Application Gateway", "Azure API Management (APIM)", "Azure Logic Apps", "Azure Service Bus"],
+                correct: 1,
+                explanation: "O Azure API Management (APIM) atua como uma fachada para seus serviços de backend, permitindo publicar, proteger, transformar, manter e monitorar APIs em um local centralizado."
+            },
+            {
+                category: "Desenvolver soluções de computação do Azure",
+                question: "Você está criando uma imagem de contêiner personalizada para sua aplicação .NET e precisa armazená-la em um registro privado e seguro no Azure, integrado ao ecossistema do Azure. Onde você deve publicar essa imagem?",
+                options: ["Docker Hub", "GitHub Packages", "Azure Container Registry (ACR)", "Azure Blob Storage"],
+                correct: 2,
+                explanation: "O Azure Container Registry (ACR) é um serviço de registro de contêiner privado e gerenciado, baseado no Docker Registry 2.0. Ele se integra perfeitamente com outros serviços do Azure, como App Service, AKS e ACI."
+            },
+            {
+                category: "Monitorar e solucionar problemas de soluções do Azure",
+                question: "Você habilitou o Application Insights para sua aplicação web e percebeu que as informações de telemetria sobre dependências, como chamadas a um banco de dados SQL, não estão sendo coletadas automaticamente. O que provavelmente está faltando?",
+                options: ["A Instrumentation Key não foi configurada corretamente.", "O agente do Application Insights (ou SDK) não está configurado para coletar telemetria de dependências.", "É necessário criar alertas manuais para cada dependência.", "O Application Insights não suporta monitoramento de dependências SQL."],
+                correct: 1,
+                explanation: "Para a coleta automática de dependências, o SDK do Application Insights deve ser corretamente instrumentado na sua aplicação. Em alguns casos, como em aplicações .NET mais antigas ou em cenários específicos, pode ser necessário habilitar explicitamente a coleta de dependências ou usar agentes de monitoramento."
+            },
+            {
+                category: "Desenvolver para armazenamento do Azure",
+                question: "Você precisa garantir que todos os blobs em uma conta de armazenamento do Azure sejam movidos da camada de acesso 'Hot' para 'Cool' após 30 dias e, em seguida, arquivados após 180 dias para otimizar custos. Qual recurso do Azure Blob Storage você deve usar?",
+                options: ["Azure Data Factory", "Gerenciamento do Ciclo de Vida (Lifecycle Management)", "Shared Access Signatures (SAS)", "Blob Versioning"],
+                correct: 1,
+                explanation: "As políticas de Gerenciamento do Ciclo de Vida permitem criar regras para automatizar a transição de blobs para camadas de acesso mais frias ou excluí-los com base em sua idade ou na data da última modificação."
+            },
+            {
+                category: "Desenvolver soluções de computação do Azure",
+                question: "Você tem um Web App no Azure App Service e deseja testar uma nova versão em produção com um pequeno subconjunto de usuários antes de liberá-la para todos. Qual recurso do App Service facilita essa abordagem?",
+                options: ["Planos de App Service", "WebJobs", "Slots de Implantação (Deployment Slots)", "Backup e Restauração"],
+                correct: 2,
+                explanation: "Os Slots de Implantação permitem criar ambientes de preparação (staging) para sua aplicação. Você pode implantar a nova versão em um slot, testá-la e, em seguida, trocar (swap) o slot com o de produção com zero tempo de inatividade, direcionando gradualmente o tráfego se desejar."
+            },
+            {
+                category: "Implementar a segurança do Azure",
+                question: "Um aplicativo cliente precisa de permissão para ler um blob específico em uma conta de armazenamento por um período limitado de 15 minutos, sem ter acesso à chave da conta de armazenamento. Como você pode conceder esse acesso temporário?",
+                options: ["Usando uma chave de acesso da conta de armazenamento.", "Criando uma política de acesso no nível do contêiner.", "Gerando uma Shared Access Signature (SAS) para o blob.", "Concedendo ao aplicativo uma função RBAC de 'Storage Blob Data Reader'."],
+                correct: 2,
+                explanation: "Uma Shared Access Signature (SAS) fornece acesso delegado e granular aos recursos em sua conta de armazenamento. Você pode especificar permissões (leitura, escrita), um período de validade e o recurso específico (neste caso, o blob)."
+            },
+            {
+                category: "Conectar e consumir serviços do Azure e de terceiros",
+                question: "Você está desenvolvendo uma solução que precisa reagir a eventos que ocorrem em serviços do Azure, como o upload de um novo blob para o Storage ou a criação de um novo recurso. Qual serviço é ideal para rotear esses eventos para manipuladores, como uma Azure Function?",
+                options: ["Azure Event Hubs", "Azure Service Bus", "Azure Event Grid", "Azure Queue Storage"],
+                correct: 2,
+                explanation: "O Azure Event Grid é um serviço de roteamento de eventos totalmente gerenciado que permite conectar facilmente fontes de eventos (como Blob Storage) a manipuladores de eventos (como Azure Functions) usando um modelo de publicação/assinatura."
+            },
+            {
+                category: "Desenvolver soluções de computação do Azure",
+                question: "Você está implementando uma Azure Function que será acionada sempre que uma nova mensagem chegar a uma fila do Azure Service Bus. Que tipo de componente você deve configurar na sua função para isso?",
+                options: ["Input Binding", "Output Binding", "Trigger (Gatilho)", "Webhook"],
+                correct: 2,
+                explanation: "Um Gatilho (Trigger) define como uma função é invocada. Para reagir a mensagens em uma fila do Service Bus, você deve usar um 'Service Bus Trigger'."
+            },
+            {
+                category: "Desenvolver para armazenamento do Azure",
+                question: "Ao desenvolver uma aplicação que usa o SDK do Azure Blob Storage, você precisa adicionar metadados personalizados (chave-valor) a um blob no momento do upload. Como isso é geralmente alcançado?",
+                options: ["Nomeando o blob com os metadados no formato 'chave=valor'.", "Carregando um arquivo JSON separado com os metadados.", "Passando um dicionário ou mapa de metadados como um parâmetro no método de upload.", "Definindo tags no contêiner que se aplicam a todos os blobs."],
+                correct: 2,
+                explanation: "O SDK do Azure Blob Storage, em linguagens como C#, Python e Java, fornece um parâmetro nos métodos de upload (como `UploadAsync` ou `upload_blob`) para passar um dicionário de strings que será armazenado como metadados do blob."
+            },
+             {
+                category: "Desenvolver soluções de computação do Azure",
+                question: "Você precisa executar um único contêiner rapidamente para uma tarefa de curta duração sem se preocupar com orquestração de contêineres ou gerenciamento de servidores. Qual é o serviço mais simples e rápido para essa finalidade?",
+                options: ["Azure Kubernetes Service (AKS)", "Azure App Service", "Azure Container Apps", "Azure Container Instances (ACI)"],
+                correct: 3,
+                explanation: "Azure Container Instances (ACI) é a solução mais rápida e simples para executar um único contêiner no Azure. Ele oferece faturamento por segundo e não requer a sobrecarga de gerenciamento de um orquestrador."
+            },
+            {
+                category: "Implementar a segurança do Azure",
+                question: "Sua aplicação web precisa autenticar usuários usando suas contas corporativas (Microsoft Entra ID) e também contas pessoais da Microsoft (MSA). Qual ponto de extremidade da plataforma de identidade da Microsoft você deve usar para suportar ambos os tipos de conta?",
+                options: ["https://login.microsoftonline.com/{tenant-id}", "https://login.microsoftonline.com/organizations", "https://login.microsoftonline.com/common", "https://login.microsoftonline.com/consumers"],
+                correct: 2,
+                explanation: "O ponto de extremidade '/common' é usado em aplicações multilocatárias para permitir que usuários de qualquer locatário do Microsoft Entra ID e usuários com contas pessoais da Microsoft (MSA) façam login."
+            },
+            {
+                category: "Desenvolver para armazenamento do Azure",
+                question: "Sua aplicação processa um grande volume de dados e precisa ser notificada em tempo real sobre todas as alterações (criações e atualizações) em um contêiner do Azure Cosmos DB. Qual recurso você deve utilizar?",
+                options: ["Stored Procedures do Cosmos DB", "Triggers do Cosmos DB", "Change Feed (Feed de Alterações)", "Consultas SQL periódicas"],
+                correct: 2,
+                explanation: "O Change Feed do Cosmos DB fornece um log persistente de alterações em um contêiner. Você pode criar um processador de feed de alterações para ouvir e reagir a esses eventos em tempo real."
+            },
+            {
+                category: "Monitorar e solucionar problemas de soluções do Azure",
+                question: "Para monitorar a disponibilidade e o tempo de resposta da página inicial da sua aplicação web a partir de diferentes localizações geográficas, qual recurso do Application Insights você deve configurar?",
+                options: ["Métricas em tempo real (Live Metrics)", "Mapa da Aplicação (Application Map)", "Testes de disponibilidade (Availability tests)", "Análise de falhas (Failure analysis)"],
+                correct: 2,
+                explanation: "Os testes de disponibilidade, anteriormente conhecidos como web tests, permitem configurar pings de URL ou testes de várias etapas para verificar a disponibilidade e a capacidade de resposta do seu aplicativo a partir de pontos de presença do Azure em todo o mundo."
+            },
+            {
+                category: "Conectar e consumir serviços do Azure e de terceiros",
+                question: "Você precisa garantir que mensagens enviadas para uma fila do Azure Service Bus sejam processadas estritamente na ordem em que foram enviadas (First-In, First-Out). O que você precisa habilitar na fila?",
+                options: ["Detecção de duplicatas", "Sessões (Sessions)", "Particionamento", "Tópicos e Assinaturas"],
+                correct: 1,
+                explanation: "As Sessões no Service Bus permitem o processamento de mensagens correlacionadas e ordenadas. Ao habilitar sessões em uma fila, um consumidor pode bloquear a sessão para garantir que processe as mensagens dessa sessão em ordem FIFO."
+            },
+            {
+                category: "Desenvolver soluções de computação do Azure",
+                question: "Um Web App no Azure App Service está enfrentando picos de tráfego imprevisíveis. Você precisa configurar o App Service para adicionar ou remover instâncias automaticamente com base no uso da CPU. Que recurso você deve configurar?",
+                options: ["Scale up (Escalar verticalmente)", "Deployment slots", "Autoscale (Escalabilidade automática)", "WebJobs"],
+                correct: 2,
+                explanation: "A Escalabilidade automática (Autoscale), também conhecida como scale out, permite definir regras para aumentar (adicionar) ou diminuir (remover) o número de instâncias que executam sua aplicação com base em métricas de desempenho, como o percentual de uso da CPU."
+            },
+            {
+                category: "Implementar a segurança do Azure",
+                question: "Sua aplicação precisa chamar a API do Microsoft Graph para ler informações do perfil do usuário autenticado. Qual é o primeiro passo para permitir que sua aplicação faça isso de forma segura?",
+                options: ["Obter as credenciais de administrador global do locatário.", "Registrar a aplicação no Microsoft Entra ID e conceder as permissões de API necessárias.", "Usar uma chave de API estática gerada no portal do Azure.", "Chamar a API anonimamente."],
+                correct: 1,
+                explanation: "Toda aplicação que se integra à plataforma de identidade da Microsoft deve ser registrada no Microsoft Entra ID. Durante o registro, você define as permissões de API (escopos) que sua aplicação precisa, como 'User.Read', para que o consentimento possa ser solicitado ao usuário."
+            },
+            {
+                category: "Conectar e consumir serviços do Azure e de terceiros",
+                question: "Você precisa enviar um grande volume de eventos de telemetria de dispositivos IoT para o Azure. O serviço deve suportar alta taxa de transferência, baixa latência e a capacidade de vários consumidores lerem o mesmo fluxo de eventos. Qual serviço é o mais adequado?",
+                options: ["Azure Queue Storage", "Azure Service Bus Queues", "Azure Event Hubs", "Azure Event Grid"],
+                correct: 2,
+                explanation: "O Azure Event Hubs é uma plataforma de streaming de big data e um serviço de ingestão de eventos. Ele foi projetado para ingerir milhões de eventos por segundo, tornando-o ideal para cenários de telemetria e IoT."
+            },
+            {
+                category: "Desenvolver soluções de computação do Azure",
+                question: "Você está configurando o arquivo `function.json` para uma Azure Function em Python. Você precisa que a função leia o conteúdo de um blob do Azure Storage sempre que for acionada por uma mensagem de fila. Como você define o acesso ao blob?",
+                options: ["Como um 'trigger' do tipo 'blob'.", "Como um 'output binding' do tipo 'blob'.", "Como um 'input binding' do tipo 'blob'.", "Não é possível ler um blob e ser acionado por uma fila ao mesmo tempo."],
+                correct: 2,
+                explanation: "Você usaria um 'Queue Trigger' para iniciar a função e um 'Blob Input Binding' para ler dados de um blob. O input binding permite que a função acesse dados de outro serviço de forma declarativa e sem escrever código de acesso a dados."
+            },
+            {
+                category: "Monitorar e solucionar problemas de soluções do Azure",
+                question: "Ao analisar logs no Application Insights, você deseja escrever consultas complexas para filtrar, agregar e visualizar dados de telemetria. Qual linguagem de consulta você usaria?",
+                options: ["SQL (Structured Query Language)", "PowerShell", "KQL (Kusto Query Language)", "JSON"],
+                correct: 2,
+                explanation: "O Azure Monitor Logs (e, por extensão, o Application Insights Analytics) usa a Kusto Query Language (KQL) para consultar e analisar os dados de telemetria. KQL é uma linguagem poderosa e somente leitura, otimizada para análise de big data."
+            },
+            {
+                category: "Desenvolver para armazenamento do Azure",
+                question: "Sua aplicação precisa realizar uma operação atômica que envolve múltiplos itens dentro da mesma partição lógica em um contêiner do Azure Cosmos DB. Qual a melhor forma de garantir a atomicidade dessa transação?",
+                options: ["Usar o Change Feed.", "Executar as operações sequencialmente e implementar uma lógica de reversão manual.", "Usar Stored Procedures do Cosmos DB.", "Usar o SDK de transações do .NET."],
+                correct: 2,
+                explanation: "Stored Procedures no Azure Cosmos DB são executadas dentro do escopo de uma partição lógica e garantem transações ACID (Atomicidade, Consistência, Isolamento, Durabilidade) para operações que envolvem múltiplos documentos."
+            },
+            {
+                category: "Implementar a segurança do Azure",
+                question: "Você está armazenando uma connection string de banco de dados para sua aplicação web. Para maximizar a segurança, onde essa connection string deve ser armazenada e como a aplicação deve acessá-la?",
+                options: ["No arquivo web.config ou appsettings.json, versionado no Git.", "Como uma variável de ambiente no servidor de desenvolvimento.", "No Azure Key Vault, acessada pela aplicação usando uma Identidade Gerenciada.", "Em um Azure Blob Storage com acesso público desabilitado."],
+                correct: 2,
+                explanation: "A prática recomendada é armazenar segredos, como connection strings, no Azure Key Vault. A aplicação deve então usar uma Identidade Gerenciada para se autenticar no Key Vault e recuperar o segredo em tempo de execução, evitando credenciais no código ou na configuração."
+            },
+            {
+                category: "Conectar e consumir serviços do Azure e de terceiros",
+                question: "Você está usando o Azure API Management e precisa transformar uma resposta de um serviço de backend (que retorna XML) para o formato JSON antes de enviá-la ao cliente. Onde você configuraria essa transformação?",
+                options: ["Nas configurações do Produto.", "Nas configurações da API.", "Em uma Política (Policy) na seção 'outbound' ou 'on-response'.", "Nas configurações de diagnóstico."],
+                correct: 2,
+                explanation: "As Políticas no APIM permitem modificar o comportamento da API em tempo de execução. A transformação de formato de resposta é uma tarefa comum realizada no pipeline de processamento de saída ('outbound'), usando políticas como `set-body` com expressões para converter de XML para JSON."
+            },
+            {
+                category: "Conectar e consumir serviços do Azure e de terceiros",
+                question: "Qual é a principal diferença de caso de uso entre Azure Queue Storage e Azure Service Bus Queues?",
+                options: ["Queue Storage é para comunicação entre componentes dentro do Azure; Service Bus é para comunicação com sistemas on-premises.", "Queue Storage oferece uma API REST simples e é ideal para filas grandes e simples; Service Bus oferece recursos avançados como sessões, transações e detecção de duplicatas.", "Queue Storage é mais caro, mas mais rápido que Service Bus.", "Não há diferenças significativas; são serviços intercambiáveis."],
+                correct: 1,
+                explanation: "O Azure Queue Storage é um serviço de enfileiramento simples e econômico, ideal para desacoplar componentes e para backlogs de trabalho. O Service Bus é um agente de mensagens corporativo completo, com recursos avançados para cenários de mensagens complexos que exigem maior confiabilidade e funcionalidades como FIFO (com sessões)."
+            },
+            {
+                category: "Desenvolver soluções de computação do Azure",
+                question: "Você precisa configurar o log de diagnóstico para um Azure App Service Web App para capturar logs do servidor web (IIS) e logs de rastreamento de solicitações com falha. Onde você habilita e configura essas opções?",
+                options: ["No Application Insights.", "No portal do Azure, na seção 'Diagnóstico e resolução de problemas' do App Service.", "No portal do Azure, na seção 'Logs de diagnóstico' (Diagnostic settings) do App Service.", "Modificando o arquivo web.config diretamente via Kudu."],
+                correct: 2,
+                explanation: "A seção 'Logs de diagnóstico' no portal do Azure para um App Service é o local central para habilitar vários tipos de logs, incluindo logs do servidor de aplicativos, logs do servidor web, mensagens de erro detalhadas e rastreamento de solicitações com falha, e para configurar seu destino (Filesystem, Blob Storage, etc.)."
+            },
+            {
+                category: "Desenvolver para armazenamento do Azure",
+                question: "Ao usar o SDK do Azure Cosmos DB para NoSQL, qual método é mais eficiente para ler um único item quando você já conhece seu ID e sua chave de partição?",
+                options: ["Executar uma consulta SQL como `SELECT * FROM c WHERE c.id = '...'`.", "Usar o método `ReadItemAsync` (ou equivalente) fornecendo o ID e a chave de partição.", "Listar todos os itens no contêiner e filtrar o resultado no lado do cliente.", "Usar o Change Feed para encontrar o item."],
+                correct: 1,
+                explanation: "A operação de leitura de ponto (`ReadItemAsync`) é a forma mais eficiente e de menor custo (em RUs) para buscar um único item, pois ela acessa o item diretamente usando seu ID e chave de partição, sem a sobrecarga de um mecanismo de consulta."
+            },
+            {
+                category: "Implementar a segurança do Azure",
+                question: "Uma aplicação precisa que um usuário conceda permissão para que ela leia seus e-mails através da API do Microsoft Graph. Que tipo de permissão de API é necessária para este cenário?",
+                options: ["Permissão de Aplicação (Application permission)", "Permissão Delegada (Delegated permission)", "Shared Access Signature (SAS)", "Chave de API (API Key)"],
+                correct: 1,
+                explanation: "Permissões Delegadas são usadas em cenários onde um usuário está presente e o aplicativo age em nome desse usuário. O aplicativo só poderá acessar o que o usuário conectado tem permissão para acessar. Permissões de Aplicação são para cenários de serviço/daemon, sem um usuário conectado."
+            },
+            {
+                category: "Conectar e consumir serviços do Azure e de terceiros",
+                question: "Você está projetando uma solução de mensagens. A principal exigência é que uma única mensagem de entrada seja entregue a múltiplos sistemas de backend que precisam processá-la de forma independente. Qual padrão e serviço do Azure se encaixam melhor?",
+                options: ["Padrão Competing Consumers usando uma Fila do Service Bus.", "Padrão Publish/Subscribe usando Tópicos e Assinaturas do Service Bus.", "Padrão Fan-out usando o Azure Event Grid.", "Padrão de Filas de Prioridade usando Queue Storage."],
+                correct: 1,
+                explanation: "O padrão Publish/Subscribe (Pub/Sub) é exatamente para este cenário. No Azure Service Bus, você publica a mensagem em um Tópico, e cada sistema de backend assina (subscribe) esse tópico com sua própria Assinatura, recebendo uma cópia da mensagem para processamento independente."
+            }
+        ];
+
+
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const reviewScreen = document.getElementById('review-screen');
+
+        const startBtn = document.getElementById('start-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const finishBtn = document.getElementById('finish-btn');
+        const reviewBtn = document.getElementById('review-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const restartFromReviewBtn = document.getElementById('restart-from-review-btn');
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+
+        const scorePercentageEl = document.getElementById('score-percentage');
+        const scoreCorrectEl = document.getElementById('score-correct');
+        const scoreTotalEl = document.getElementById('score-total');
+
+        const reviewContainer = document.getElementById('review-container');
+        
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(quizData.length).fill(null);
+        let quizChart = null;
+
+        function startQuiz() {
+            startScreen.classList.add('hidden');
+            resultsScreen.classList.add('hidden');
+            reviewScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            
+            currentQuestionIndex = 0;
+            userAnswers.fill(null);
+            
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            const question = quizData[currentQuestionIndex];
+            questionNumberEl.textContent = currentQuestionIndex + 1;
+            questionTextEl.textContent = question.question;
+            optionsContainer.innerHTML = '';
+
+            question.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.innerHTML = `
+                    <label class="block w-full text-left p-4 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-sky-400 transition-colors quiz-option">
+                        <input type="radio" name="option" value="${index}" class="hidden">
+                        <span class="font-medium">${String.fromCharCode(65 + index)}.</span> ${option}
+                    </label>
+                `;
+                optionsContainer.appendChild(optionElement);
+
+                const label = optionElement.querySelector('label');
+                if (userAnswers[currentQuestionIndex] === index) {
+                    label.classList.add('selected');
+                    label.querySelector('input').checked = true;
+                }
+                
+                label.addEventListener('click', () => {
+                    document.querySelectorAll('.quiz-option').forEach(opt => opt.classList.remove('selected'));
+                    label.classList.add('selected');
+                    userAnswers[currentQuestionIndex] = index;
+                });
+            });
+
+            updateNavigation();
+        }
+
+        function updateNavigation() {
+            prevBtn.disabled = currentQuestionIndex === 0;
+            prevBtn.classList.toggle('opacity-50', prevBtn.disabled);
+
+            if (currentQuestionIndex === quizData.length - 1) {
+                nextBtn.classList.add('hidden');
+                finishBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                finishBtn.classList.add('hidden');
+            }
+        }
+        
+        function showNextQuestion() {
+            if (currentQuestionIndex < quizData.length - 1) {
+                currentQuestionIndex++;
+                displayQuestion();
+            }
+        }
+
+        function showPrevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displayQuestion();
+            }
+        }
+
+        function finishQuiz() {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            displayResults();
+        }
+
+        function displayResults() {
+            let correctAnswers = 0;
+            const categoryResults = {};
+            const categoryTotals = {};
+
+            quizData.forEach((q, index) => {
+                if (!categoryResults[q.category]) {
+                    categoryResults[q.category] = 0;
+                    categoryTotals[q.category] = 0;
+                }
+                categoryTotals[q.category]++;
+
+                if (userAnswers[index] === q.correct) {
+                    correctAnswers++;
+                    categoryResults[q.category]++;
+                }
+            });
+
+            const percentage = Math.round((correctAnswers / quizData.length) * 100);
+            scorePercentageEl.textContent = percentage;
+            scoreCorrectEl.textContent = correctAnswers;
+            scoreTotalEl.textContent = quizData.length;
+
+            const categoryLabels = Object.keys(categoryResults);
+            const categoryScores = categoryLabels.map(cat => Math.round((categoryResults[cat] / categoryTotals[cat]) * 100));
+
+            const ctx = document.getElementById('results-chart').getContext('2d');
+            if(quizChart) {
+                quizChart.destroy();
+            }
+            quizChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: categoryLabels,
+                    datasets: [{
+                        label: 'Desempenho por Categoria (%)',
+                        data: categoryScores,
+                        backgroundColor: [
+                            'rgba(2, 132, 199, 0.8)',
+                            'rgba(14, 165, 233, 0.8)',
+                            'rgba(56, 189, 248, 0.8)',
+                            'rgba(125, 211, 252, 0.8)',
+                            'rgba(186, 230, 253, 0.8)'
+                        ],
+                        borderColor: 'rgba(255, 255, 255, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 20,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function reviewAnswers() {
+            resultsScreen.classList.add('hidden');
+            reviewScreen.classList.remove('hidden');
+            reviewContainer.innerHTML = '';
+
+            quizData.forEach((question, index) => {
+                const userAnswer = userAnswers[index];
+                const isCorrect = userAnswer === question.correct;
+
+                const reviewBlock = document.createElement('div');
+                reviewBlock.className = 'bg-white p-6 rounded-lg shadow-sm border-l-4';
+                reviewBlock.style.borderLeftColor = isCorrect ? '#22c55e' : '#ef4444';
+
+                let optionsHtml = '';
+                question.options.forEach((option, optIndex) => {
+                    let optionClass = 'quiz-option';
+                    if (optIndex === question.correct) {
+                        optionClass += ' correct';
+                    } else if (optIndex === userAnswer && !isCorrect) {
+                        optionClass += ' incorrect';
+                    }
+
+                    optionsHtml += `
+                        <div class="${optionClass} p-3 mt-2 border-2 rounded-lg">
+                           <span class="font-medium">${String.fromCharCode(65 + optIndex)}.</span> ${option}
+                        </div>
+                    `;
+                });
+
+                reviewBlock.innerHTML = `
+                    <p class="font-semibold text-lg mb-2">Questão ${index + 1}: ${question.question}</p>
+                    <div class="space-y-2 mb-4">${optionsHtml}</div>
+                    <div class="p-4 bg-slate-50 rounded-lg">
+                        <p class="font-semibold">Explicação:</p>
+                        <p class="text-slate-700">${question.explanation}</p>
+                    </div>
+                `;
+                reviewContainer.appendChild(reviewBlock);
+            });
+        }
+
+        startBtn.addEventListener('click', startQuiz);
+        nextBtn.addEventListener('click', showNextQuestion);
+        prevBtn.addEventListener('click', showPrevQuestion);
+        finishBtn.addEventListener('click', finishQuiz);
+        reviewBtn.addEventListener('click', reviewAnswers);
+        restartBtn.addEventListener('click', startQuiz);
+        restartFromReviewBtn.addEventListener('click', startQuiz);
+    </script>
+
+</body>
+</html>
